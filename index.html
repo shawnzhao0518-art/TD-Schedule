@@ -1,38 +1,162 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TD Schedule</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>TD Schedule</title>
+<style>
+*{box-sizing:border-box;font-family:-apple-system,PingFang SC,Roboto,sans-serif;}
+body{margin:0;background:#121212;color:#f1f1f1;display:flex;flex-direction:column;min-height:100vh;}
+header{text-align:center;padding:16px 0;background:#1d1d1d;position:sticky;top:0;z-index:10;}
+header h1{margin:0;font-size:22px;}
+#week-range{font-size:14px;color:#bbb;margin-top:4px;}
+main{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,1fr);gap:1px;background:#333;}
+.day-cell{background:#1e1e1e;position:relative;min-height:100px;padding:4px;overflow:hidden;}
+.task{background:#2b4b6f;margin:2px 0;padding:4px;border-radius:6px;font-size:12px;cursor:pointer;}
+.task.done{background:#2e6f5e;}
+#add-btn{position:fixed;bottom:24px;right:24px;width:64px;height:64px;border:none;border-radius:50%;
+background:#007bff;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;
+justify-content:center;transition:transform .2s ease,background .2s ease;z-index:999;}
+#add-btn:hover{transform:scale(1.1);background:#2196f3;}
+#add-btn svg{width:32px;height:32px;fill:#fff;}
+footer{text-align:center;padding:10px 0;font-size:13px;color:#777;background:#1d1d1d;}
+#modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;
+align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.hidden{display:none;}
+.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;width:90%;max-width:400px;}
+.modal-content input,textarea{width:100%;margin-bottom:8px;border:none;border-radius:4px;padding:6px;}
+button{background:#2979ff;color:#fff;border:none;border-radius:4px;padding:8px 12px;margin:4px 2px;cursor:pointer;}
+@media(max-width:768px){main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);}}
+</style>
 </head>
 <body>
-  <header>
-    <h1>TD Schedule</h1>
-    <div id="week-range"></div>
-  </header>
-  <main id="schedule"></main>
-  <button id="add-btn" title="添加任务"><img src="assets/add.svg" alt="add" /></button>
-  <footer>Designed by Shawn</footer>
+<header>
+  <h1>TD Schedule</h1>
+  <div id="week-range"></div>
+</header>
 
-  <div id="modal" class="hidden">
-    <div class="modal-content">
-      <h2>添加任务</h2>
-      <label>日期：</label><input type="date" id="task-date" />
-      <label>时间：</label><input type="time" id="task-time" />
-      <label>车型：</label><input type="text" id="task-model" />
-      <label>里程：</label><input type="text" id="task-mileage" />
-      <label>车牌号：</label><input type="text" id="task-plate" />
-      <label>项目：</label><input type="text" id="task-service" />
-      <label>报价：</label><input type="text" id="task-price" />
-      <label>联系方式：</label><input type="text" id="task-phone" />
-      <label>备注：</label><textarea id="task-note"></textarea>
-      <button id="save-task">保存</button>
-      <button id="cancel-task">取消</button>
-    </div>
+<main id="schedule"></main>
+
+<button id="add-btn" title="添加任务">
+  <svg viewBox="0 0 24 24"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/></svg>
+</button>
+
+<footer>Designed by Shawn</footer>
+
+<!-- 添加任务浮窗 -->
+<div id="modal" class="hidden">
+  <div class="modal-content">
+    <h2>添加任务</h2>
+    <label>日期：</label><input type="date" id="task-date" />
+    <label>时间：</label><input type="time" id="task-time" />
+    <label>车型：</label><input type="text" id="task-model" />
+    <label>里程：</label><input type="text" id="task-mileage" />
+    <label>车牌号：</label><input type="text" id="task-plate" />
+    <label>项目：</label><input type="text" id="task-service" />
+    <label>报价：</label><input type="text" id="task-price" />
+    <label>联系方式：</label><input type="text" id="task-phone" />
+    <label>备注：</label><textarea id="task-note"></textarea>
+    <button id="save-task">保存</button>
+    <button id="cancel-task">取消</button>
   </div>
+</div>
 
-  <script type="module" src="firebase.js"></script>
-  <script type="module" src="script.js"></script>
+<script type="module">
+// ---------------- Firebase 初始化 ----------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyAyyrP8eLT174psGD9MJpZkK2iZ-_dbpS0",
+  authDomain:"td-schedule-c010f.firebaseapp.com",
+  databaseURL:"https://td-schedule-c010f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"td-schedule-c010f",
+  storageBucket:"td-schedule-c010f.firebasestorage.app",
+  messagingSenderId:"747320547273",
+  appId:"1:747320547273:web:15a251e4fbb45dd0557a18"
+};
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
+const auth=getAuth();
+signInAnonymously(auth).then(()=>console.log("✅ 已匿名登录")).catch(e=>console.error("登录失败",e));
+
+// ---------------- 业务逻辑 ----------------
+const scheduleEl=document.getElementById("schedule");
+const weekRangeEl=document.getElementById("week-range");
+const addBtn=document.getElementById("add-btn");
+const modal=document.getElementById("modal");
+const saveBtn=document.getElementById("save-task");
+const cancelBtn=document.getElementById("cancel-task");
+
+function getMonday(d){d=new Date(d);const day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);return new Date(d.setDate(diff));}
+function fmt(d){return `${d.getMonth()+1}.${d.getDate()}`;}
+function buildWeeks(){
+  const now=new Date();
+  const monday=getMonday(now);
+  const nextWeek=new Date(monday);nextWeek.setDate(monday.getDate()+7);
+  const week1End=new Date(monday);week1End.setDate(monday.getDate()+5);
+  const week2End=new Date(nextWeek);week2End.setDate(nextWeek.getDate()+5);
+  weekRangeEl.textContent=`【本周 ${fmt(monday)}–${fmt(week1End)}】 | 【下周 ${fmt(nextWeek)}–${fmt(week2End)}】`;
+  return [monday,nextWeek];
+}
+function renderGrid(){
+  scheduleEl.innerHTML="";
+  const[w1,w2]=buildWeeks();
+  const days=[];
+  for(let i=0;i<6;i++)days.push(new Date(w1.getFullYear(),w1.getMonth(),w1.getDate()+i));
+  for(let i=0;i<6;i++)days.push(new Date(w2.getFullYear(),w2.getMonth(),w2.getDate()+i));
+  days.forEach(date=>["AM","PM"].forEach(p=>{
+    const div=document.createElement("div");
+    div.className="day-cell";
+    div.dataset.key=`${date.toISOString().split("T")[0]}_${p}`;
+    scheduleEl.appendChild(div);
+  }));
+}
+renderGrid();
+
+onValue(ref(db),snap=>{
+  const data=snap.val()||{};
+  document.querySelectorAll(".day-cell").forEach(c=>{
+    c.innerHTML="";
+    const key=c.dataset.key;
+    const list=data[key]||[];
+    list.forEach(i=>{
+      const div=document.createElement("div");
+      div.className="task"+(i.status?" done":"");
+      div.textContent=`${i.time} ${i.service}`;
+      c.appendChild(div);
+    });
+  });
+});
+
+addBtn.onclick=()=>modal.classList.remove("hidden");
+cancelBtn.onclick=()=>modal.classList.add("hidden");
+saveBtn.onclick=()=>{
+  const d=document.getElementById("task-date").value;
+  const t=document.getElementById("task-time").value;
+  if(!d||!t){alert("请选择日期和时间");return;}
+  const obj={
+    time:t,
+    model:task-model.value,
+    mileage:task-mileage.value,
+    plate:task-plate.value,
+    service:task-service.value,
+    price:task-price.value,
+    phone:task-phone.value,
+    note:task-note.value,
+    status:false
+  };
+  const p=parseInt(t.split(":")[0])<12?"AM":"PM";
+  const key=`${d}_${p}`;
+  const r=ref(db,key);
+  get(r).then(s=>{
+    const l=s.val()||[];
+    l.push(obj);
+    set(r,l);
+    modal.classList.add("hidden");
+  });
+};
+</script>
 </body>
 </html>
