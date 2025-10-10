@@ -6,29 +6,107 @@
 <title>TD Schedule</title>
 <style>
 *{box-sizing:border-box;font-family:-apple-system,PingFang SC,Roboto,sans-serif;}
-body{margin:0;background:#121212;color:#f1f1f1;display:flex;flex-direction:column;min-height:100vh;}
+body{margin:0;background:#121212;color:#f1f1f1;display:flex;flex-direction:column;min-height:100vh;overflow:hidden;}
 header{text-align:center;padding:16px 0;background:#1d1d1d;position:sticky;top:0;z-index:10;}
 header h1{margin:0;font-size:22px;}
 #week-range{font-size:14px;color:#bbb;margin-top:4px;}
-main{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,1fr);gap:1px;background:#333;}
-.day-cell{background:#1e1e1e;border:1px solid #333;position:relative;min-height:100px;padding:4px;overflow:hidden;text-align:center;}
-.placeholder{color:#444;font-size:13px;margin-top:38px;}
-.task{background:#2b4b6f;margin:2px 0;padding:4px;border-radius:6px;font-size:12px;cursor:pointer;}
+main{
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  grid-template-rows:repeat(2,1fr);
+  gap:2px;
+  background:#2a2a2a;
+  height:60vh; /* 控制整体高度 */
+  margin:16px;
+  border:1px solid #333;
+  border-radius:8px;
+}
+.day-cell{
+  background:#1e1e1e;
+  border:1px solid #2f2f2f;
+  border-radius:4px;
+  position:relative;
+  padding:4px;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:80px;
+}
+.task{
+  background:#2b4b6f;
+  margin:2px 0;
+  padding:4px 6px;
+  border-radius:6px;
+  font-size:12px;
+  cursor:pointer;
+  width:90%;
+  text-align:center;
+}
 .task.done{background:#2e6f5e;}
-#add-btn{position:fixed;bottom:24px;right:24px;width:64px;height:64px;border:none;border-radius:50%;
-background:#007bff;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;
-justify-content:center;transition:transform .2s ease,background .2s ease;z-index:999;}
+#add-btn{
+  position:fixed;
+  bottom:24px;
+  right:24px;
+  width:64px;
+  height:64px;
+  border:none;
+  border-radius:50%;
+  background:#007bff;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform .2s ease,background .2s ease;
+  z-index:999;
+}
 #add-btn:hover{transform:scale(1.1);background:#2196f3;}
 #add-btn svg{width:32px;height:32px;fill:#fff;}
 footer{text-align:center;padding:10px 0;font-size:13px;color:#777;background:#1d1d1d;}
-#modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;
-align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#modal{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,.5);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter:blur(4px);
+  z-index:1000;
+}
 .hidden{display:none;}
-.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;width:90%;max-width:400px;max-height:80vh;
-overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.5);}
-.modal-content input,textarea{width:100%;margin-bottom:8px;border:none;border-radius:4px;padding:6px;font-size:16px;}
-button{background:#2979ff;color:#fff;border:none;border-radius:4px;padding:8px 12px;margin:4px 2px;cursor:pointer;}
-@media(max-width:768px){main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);}}
+.modal-content{
+  background:#1e1e1e;
+  padding:20px;
+  border-radius:10px;
+  width:90%;
+  max-width:400px;
+  max-height:80vh;
+  overflow-y:auto;
+  box-shadow:0 6px 20px rgba(0,0,0,0.5);
+}
+.modal-content input,textarea{
+  width:100%;
+  margin-bottom:8px;
+  border:none;
+  border-radius:4px;
+  padding:6px;
+  font-size:16px;
+}
+button{
+  background:#2979ff;
+  color:#fff;
+  border:none;
+  border-radius:4px;
+  padding:8px 12px;
+  margin:4px 2px;
+  cursor:pointer;
+}
+@media(max-width:768px){
+  main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);height:70vh;}
+}
 </style>
 </head>
 <body>
@@ -68,6 +146,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebas
 import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
+// 🔧 Firebase配置
 const firebaseConfig = {
   apiKey:"AIzaSyAyyrP8eLT174psGD9MJpZkK2iZ-_dbpS0",
   authDomain:"td-schedule-c010f.firebaseapp.com",
@@ -77,20 +156,12 @@ const firebaseConfig = {
   messagingSenderId:"747320547273",
   appId:"1:747320547273:web:15a251e4fbb45dd0557a18"
 };
-const app=initializeApp(firebaseConfig);
-const db=getDatabase(app);
-const auth=getAuth();
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth();
 signInAnonymously(auth);
 
-// 获取 DOM
-const scheduleEl=document.getElementById("schedule");
-const weekRangeEl=document.getElementById("week-range");
-const addBtn=document.getElementById("add-btn");
-const modal=document.getElementById("modal");
-const saveBtn=document.getElementById("save-task");
-const cancelBtn=document.getElementById("cancel-task");
-
-// 日期计算
+// 🗓️ 构建日期表格
 function getMonday(d){d=new Date(d);const day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);return new Date(d.setDate(diff));}
 function fmt(d){return `${d.getMonth()+1}.${d.getDate()}`;}
 function buildWeeks(){
@@ -99,37 +170,34 @@ function buildWeeks(){
   const nextWeek=new Date(monday);nextWeek.setDate(monday.getDate()+7);
   const week1End=new Date(monday);week1End.setDate(monday.getDate()+5);
   const week2End=new Date(nextWeek);week2End.setDate(nextWeek.getDate()+5);
-  weekRangeEl.textContent=`【本周 ${fmt(monday)}–${fmt(week1End)}】 | 【下周 ${fmt(nextWeek)}–${fmt(week2End)}】`;
+  document.getElementById("week-range").textContent=`【本周 ${fmt(monday)}–${fmt(week1End)}】 | 【下周 ${fmt(nextWeek)}–${fmt(week2End)}】`;
   return [monday,nextWeek];
 }
 
-// 生成表格
+// 渲染空表格
 function renderGrid(){
-  scheduleEl.innerHTML="";
-  const[w1,w2]=buildWeeks();
+  const schedule=document.getElementById("schedule");
+  schedule.innerHTML="";
+  const [w1,w2]=buildWeeks();
   const days=[];
   for(let i=0;i<6;i++)days.push(new Date(w1.getFullYear(),w1.getMonth(),w1.getDate()+i));
   for(let i=0;i<6;i++)days.push(new Date(w2.getFullYear(),w2.getMonth(),w2.getDate()+i));
-  days.forEach((date,idx)=>{
-    ["上午","下午"].forEach((period,j)=>{
+  days.forEach(date=>{
+    ["AM","PM"].forEach(period=>{
       const div=document.createElement("div");
       div.className="day-cell";
-      div.dataset.key=`${date.toISOString().split("T")[0]}_${j===0?"AM":"PM"}`;
-      const placeholder=document.createElement("div");
-      placeholder.className="placeholder";
-      placeholder.textContent=period;
-      div.appendChild(placeholder);
-      scheduleEl.appendChild(div);
+      div.dataset.key=`${date.toISOString().split("T")[0]}_${period}`;
+      schedule.appendChild(div);
     });
   });
 }
 renderGrid();
 
-// 实时监听数据库
+// 🔄 监听数据库变化
 onValue(ref(db),snap=>{
   const data=snap.val()||{};
   document.querySelectorAll(".day-cell").forEach(c=>{
-    c.querySelectorAll(".task").forEach(t=>t.remove());
+    c.innerHTML="";
     const key=c.dataset.key;
     const list=data[key]||[];
     list.forEach(i=>{
@@ -141,10 +209,11 @@ onValue(ref(db),snap=>{
   });
 });
 
-// 按钮事件
-addBtn.onclick=()=>modal.classList.remove("hidden");
-cancelBtn.onclick=()=>modal.classList.add("hidden");
-saveBtn.onclick=()=>{
+// ✳️ 添加任务逻辑
+const modal=document.getElementById("modal");
+document.getElementById("add-btn").onclick=()=>modal.classList.remove("hidden");
+document.getElementById("cancel-task").onclick=()=>modal.classList.add("hidden");
+document.getElementById("save-task").onclick=()=>{
   const d=document.getElementById("task-date").value;
   const t=document.getElementById("task-time").value;
   if(!d||!t){alert("请选择日期和时间");return;}
