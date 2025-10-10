@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TD Schedule</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>TD Schedule</h1>
+    <div id="week-range"></div>
+  </header>
+  <main id="schedule"></main>
+  <button id="add-btn" title="添加任务"><img src="assets/add.svg" alt="add" /></button>
+  <footer>Designed by Shawn</footer>
+
+  <div id="modal" class="hidden">
+    <div class="modal-content">
+      <h2>添加任务</h2>
+      <label>日期：</label><input type="date" id="task-date" />
+      <label>时间：</label><input type="time" id="task-time" />
+      <label>车型：</label><input type="text" id="task-model" />
+      <label>里程：</label><input type="text" id="task-mileage" />
+      <label>车牌号：</label><input type="text" id="task-plate" />
+      <label>项目：</label><input type="text" id="task-service" />
+      <label>报价：</label><input type="text" id="task-price" />
+      <label>联系方式：</label><input type="text" id="task-phone" />
+      <label>备注：</label><textarea id="task-note"></textarea>
+      <button id="save-task">保存</button>
+      <button id="cancel-task">取消</button>
+    </div>
+  </div>
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
