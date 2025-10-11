@@ -1,153 +1,247 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TD Schedule</title>
-<style>
-body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#121212; color:#fff; }
-header { text-align:center; padding:16px 0; background:#1e1e1e; }
-header h1 { margin:0; font-size:22px; }
-#week-range { font-size:14px; color:#bbb; margin-top:4px; }
-main { display:grid; grid-template-columns:repeat(6,1fr); grid-template-rows:repeat(2,1fr); gap:2px; padding:6px; }
-.day { border:1px solid #2a2a2a; border-radius:4px; background:#181818; display:flex; flex-direction:column; padding:6px; overflow-y:auto; }
-.task { background:#2c4370; border-radius:6px; padding:4px; margin-bottom:4px; font-size:13px; cursor:pointer; }
-#add-btn { position:fixed; right:24px; bottom:24px; width:64px; height:64px; border-radius:50%; background:#2979ff; color:#fff; font-size:36px; border:none; cursor:pointer; }
-#modal, #taskModal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.6); display:none; justify-content:center; align-items:center; z-index:10; }
-.modal-content { background:#1e1e1e; border-radius:8px; padding:20px; width:90%; max-width:400px; }
-label { display:block; margin-top:8px; font-size:14px; }
-input, select, textarea { width:100%; padding:6px; border-radius:4px; border:1px solid #333; background:#222; color:#fff; }
-button { margin-top:12px; padding:8px 12px; border:none; border-radius:4px; background:#2979ff; color:#fff; cursor:pointer; }
-footer { text-align:center; color:#888; padding:8px 0; background:#1e1e1e; }
-@media(max-width:768px){ main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);} }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TD Schedule</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #0f0f0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    header {
+      text-align: center;
+      padding: 16px;
+      background: #141414;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 80px repeat(6, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 2px;
+      padding: 4px;
+      height: 80vh;
+      background: #2a2a2a;
+    }
+
+    .time-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #333;
+      font-weight: bold;
+      background: #1d1d1d;
+      color: #fff;
+    }
+
+    .day {
+      border: 2px solid #333;
+      display: flex;
+      flex-direction: column;
+      background: #181818;
+    }
+
+    .half {
+      flex: 1;
+      border-top: 1px solid #444;
+      padding: 4px;
+      overflow-y: auto;
+    }
+
+    .task {
+      background: #2c4370;
+      color: #fff;
+      margin: 3px 0;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .task button {
+      background: none;
+      border: none;
+      color: #bbb;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 10px;
+      color: #777;
+      border-top: 1px solid #2a2a2a;
+    }
+
+    .add-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 52px;
+      height: 52px;
+      background: #007aff;
+      color: #fff;
+      font-size: 28px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    form {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      background: #1e1e1e;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      width: 250px;
+    }
+
+    form input, form select {
+      background: #111;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 6px;
+      font-size: 14px;
+    }
+
+    form button {
+      background: #007aff;
+      border: none;
+      padding: 8px;
+      border-radius: 4px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>TD Schedule</h1>
-  <div id="week-range"></div>
-</header>
+  <header>
+    <h1>TD Schedule</h1>
+    <p>本周 10.6 - 10.11　|　下周 10.13 - 10.18</p>
+  </header>
 
-<main id="schedule"></main>
+  <main id="schedule"></main>
 
-<button id="add-btn">+</button>
+  <footer>Designed by Shawn</footer>
 
-<!-- 添加任务弹窗 -->
-<div id="modal">
-  <div class="modal-content">
-    <h3>添加任务</h3>
-    <label>日期：<input type="date" id="date"></label>
-    <label>时间：<input type="time" id="time"></label>
-    <label>车型：<input type="text" id="car"></label>
-    <label>里程：<input type="text" id="mileage"></label>
-    <label>车牌：<input type="text" id="plate"></label>
-    <label>项目：<input type="text" id="project"></label>
-    <label>报价：</label>
-    <div style="display:flex;gap:6px;">
-      <select id="hundreds"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>
-      <select id="tens"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>
-      <select id="ones"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>
-      <span>元</span>
-    </div>
-    <label>联系方式：<input type="text" id="contact"></label>
-    <label>备注：<textarea id="note"></textarea></label>
-    <button id="save">保存</button>
-    <button onclick="closeModal()">取消</button>
-  </div>
-</div>
+  <div class="add-btn" id="addBtn">+</div>
 
-<!-- 查看任务详情 -->
-<div id="taskModal">
-  <div class="modal-content">
-    <h3>任务详情</h3>
-    <p id="taskInfo"></p>
-    <button id="deleteBtn">🗑 删除任务</button>
-    <button onclick="closeTaskModal()">关闭</button>
-  </div>
-</div>
+  <form id="taskForm">
+    <input type="date" id="date" required>
+    <select id="time">
+      <option value="上午">上午</option>
+      <option value="下午">下午</option>
+    </select>
+    <input type="text" id="car" placeholder="车辆" required>
+    <input type="number" id="price" placeholder="金额" required>
+    <button type="submit">添加任务</button>
+  </form>
 
-<footer>Designed by Shawn</footer>
+  <script>
+    const { createClient } = supabase;
+    const supabaseUrl = "https://mgrorhbschtyrdrekfhb.supabase.co";
+    const supabaseKey = "sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc";
+    const db = createClient(supabaseUrl, supabaseKey);
 
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
-const supabaseUrl = 'https://mgrorhbschtyrdrekfhb.supabase.co'
-const supabaseKey = 'sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc'
-const supabase = createClient(supabaseUrl, supabaseKey)
+    const schedule = document.getElementById('schedule');
+    const days = ['周一','周二','周三','周四','周五','周六'];
+    const weeks = ['本周','下周'];
 
-// 初始化界面
-const schedule = document.getElementById('schedule')
-const modal = document.getElementById('modal')
-const weekRange = document.getElementById('week-range')
+    // 🧱 布局创建
+    weeks.forEach(week => {
+      ['上午','下午'].forEach(label => {
+        const labelCell = document.createElement('div');
+        labelCell.className = 'time-label';
+        labelCell.textContent = `${week}${label}`;
+        schedule.appendChild(labelCell);
 
-function getWeekRange(offset=0){
-  const now=new Date();const first=now.getDate()-now.getDay()+1+offset*7;
-  const start=new Date(now.setDate(first));const end=new Date(now.setDate(first+5));
-  return `${start.getMonth()+1}.${start.getDate()} - ${end.getMonth()+1}.${end.getDate()}`
-}
-weekRange.textContent = `本周 ${getWeekRange(0)} ｜ 下周 ${getWeekRange(1)}`
+        days.forEach(() => {
+          const day = document.createElement('div');
+          day.className = 'day';
 
-// 加载任务
-async function loadTasks(){
-  schedule.innerHTML=''
-  const days=['周一','周二','周三','周四','周五','周六']
-  for(let i=0;i<6;i++){
-    const div=document.createElement('div')
-    div.className='day'
-    div.innerHTML=`<b>${days[i]}</b>`
-    schedule.appendChild(div)
-  }
-  const { data } = await supabase.from('tasks').select('*').order('date')
-  data.forEach(task=>{
-    const date=new Date(task.date);let index=date.getDay()-1;if(index<0||index>5)return;
-    const dayBox=schedule.children[index]
-    const el=document.createElement('div')
-    el.className='task'; el.dataset.id=task.id
-    el.textContent=`${task.time || ''} ${task.project || ''}`
-    el.onclick=()=>showTaskDetail(task)
-    dayBox.appendChild(el)
-  })
-}
+          const am = document.createElement('div');
+          am.className = 'half';
+          am.dataset.session = '上午';
 
-// 添加任务
-document.getElementById('add-btn').onclick=()=>modal.style.display='flex'
-function closeModal(){modal.style.display='none'}
+          const pm = document.createElement('div');
+          pm.className = 'half';
+          pm.dataset.session = '下午';
 
-document.getElementById('save').onclick=async()=>{
-  const price = parseInt(document.getElementById('hundreds').value)*100 + parseInt(document.getElementById('tens').value)*10 + parseInt(document.getElementById('ones').value)
-  const data = {
-    date:document.getElementById('date').value,
-    time:document.getElementById('time').value,
-    car:document.getElementById('car').value,
-    mileage:document.getElementById('mileage').value,
-    plate:document.getElementById('plate').value,
-    project:document.getElementById('project').value,
-    price:price.toString(),
-    contact:document.getElementById('contact').value,
-    note:document.getElementById('note').value,
-  }
-  const { error } = await supabase.from('tasks').insert([data])
-  if(error){alert('❌ 保存失败');console.error(error)} else {alert('✅ 已保存');closeModal();loadTasks()}
-}
+          day.appendChild(am);
+          day.appendChild(pm);
+          schedule.appendChild(day);
+        });
+      });
+    });
 
-// 查看与删除
-let currentTaskId=null
-function showTaskDetail(task){
-  currentTaskId=task.id
-  document.getElementById('taskInfo').innerText=
-    `${task.date} ${task.time}\n${task.car}\n${task.project}\n报价：${task.price} 元\n备注：${task.note||''}`
-  document.getElementById('taskModal').style.display='flex'
-}
-function closeTaskModal(){document.getElementById('taskModal').style.display='none'}
-document.getElementById('deleteBtn').onclick=async()=>{
-  if(!currentTaskId)return
-  const ok=confirm('确定删除该任务？')
-  if(!ok)return
-  await supabase.from('tasks').delete().eq('id',currentTaskId)
-  alert('✅ 已删除');closeTaskModal();loadTasks()
-}
+    // 🧩 添加任务表单
+    const addBtn = document.getElementById('addBtn');
+    const form = document.getElementById('taskForm');
 
-// 初始化
-loadTasks()
-</script>
+    addBtn.addEventListener('click', () => {
+      form.style.display = form.style.display === 'flex' ? 'none' : 'flex';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      const car = document.getElementById('car').value;
+      const price = parseFloat(document.getElementById('price').value);
+
+      const { error } = await db.from('tasks').insert([{ date, time, car, price }]);
+      if (error) alert('❌ 插入失败: ' + error.message);
+      else {
+        alert('✅ 添加成功');
+        form.reset();
+        form.style.display = 'none';
+        loadTasks();
+      }
+    });
+
+    // 🧾 载入任务
+    async function loadTasks() {
+      const { data, error } = await db.from('tasks').select('*');
+      if (error) { console.error(error); return; }
+
+      document.querySelectorAll('.half').forEach(h => h.innerHTML = '');
+      data.forEach(task => {
+        const divs = document.querySelectorAll(`.half[data-session="${task.time}"]`);
+        divs.forEach(div => {
+          const el = document.createElement('div');
+          el.className = 'task';
+          el.innerHTML = `${task.car} ¥${task.price} <button onclick="deleteTask('${task.id}')">x</button>`;
+          div.appendChild(el);
+        });
+      });
+    }
+
+    // 🗑 删除任务
+    async function deleteTask(id) {
+      const { error } = await db.from('tasks').delete().eq('id', id);
+      if (error) alert('❌ 删除失败: ' + error.message);
+      else loadTasks();
+    }
+
+    loadTasks();
+  </script>
 </body>
 </html>
