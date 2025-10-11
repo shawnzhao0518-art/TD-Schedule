@@ -10,121 +10,50 @@ body{margin:0;background:#121212;color:#f1f1f1;display:flex;flex-direction:colum
 header{text-align:center;padding:16px 0;background:#1d1d1d;}
 header h1{margin:0;font-size:22px;}
 #week-range{font-size:14px;color:#bbb;margin-top:4px;}
-main{
-  flex:1;
-  display:grid;
-  grid-template-columns:repeat(6,1fr);
-  grid-template-rows:repeat(2,1fr);
-  width:100vw;       /* 永远占满屏幕宽度 */
-  height:60vh;       /* 占屏幕60%高度，可调整 */
-  gap:2px;
-  background:#2a2a2a;
-  border-top:1px solid #333;
-}
-.day-cell{
-  background:#1e1e1e;
-  border:1px solid #333;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
-  padding:4px;
-  border-radius:4px;
-  overflow-y:auto;
-}
-.task{
-  background:#2b4b6f;
-  color:#fff;
-  border-radius:6px;
-  padding:4px 6px;
-  margin:2px 0;
-  width:95%;
-  text-align:center;
-  font-size:12px;
-}
+main{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,1fr);
+width:100vw;height:60vh;gap:2px;background:#2a2a2a;border-top:1px solid #333;}
+.day-cell{background:#1e1e1e;border:1px solid #333;display:flex;flex-direction:column;
+align-items:center;justify-content:flex-start;padding:4px;border-radius:4px;overflow-y:auto;}
+.task{background:#2b4b6f;color:#fff;border-radius:6px;padding:4px 6px;margin:2px 0;width:95%;
+text-align:center;font-size:12px;}
 .task.done{background:#2e6f5e;}
-#add-btn{
-  position:fixed;
-  bottom:24px;
-  right:24px;
-  width:64px;
-  height:64px;
-  border:none;
-  border-radius:50%;
-  background:#007bff;
-  box-shadow:0 4px 12px rgba(0,0,0,0.3);
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:transform .2s ease,background .2s ease;
-  z-index:999;
-}
+#add-btn{position:fixed;bottom:24px;right:24px;width:64px;height:64px;border:none;border-radius:50%;
+background:#007bff;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;display:flex;
+align-items:center;justify-content:center;transition:transform .2s ease,background .2s ease;z-index:999;}
 #add-btn:hover{transform:scale(1.1);background:#2196f3;}
 #add-btn svg{width:32px;height:32px;fill:#fff;}
-#modal{
-  display:none;
-  position:fixed;
-  top:0;left:0;width:100%;height:100%;
-  background:rgba(0,0,0,0.5);
-  align-items:center;justify-content:center;
-  backdrop-filter:blur(4px);
-  z-index:1000;
-}
+#modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,0.5);align-items:center;justify-content:center;
+backdrop-filter:blur(4px);z-index:1000;}
 #modal.show{display:flex;}
-.modal-content{
-  background:#1e1e1e;
-  padding:20px;
-  border-radius:10px;
-  width:90%;
-  max-width:400px;
-  max-height:80vh;
-  overflow-y:auto;
-  box-shadow:0 6px 20px rgba(0,0,0,0.5);
-}
-.modal-content input,textarea{
-  width:100%;margin-bottom:8px;border:none;
-  border-radius:4px;padding:6px;font-size:16px;
-}
-button{
-  background:#2979ff;color:#fff;border:none;
-  border-radius:4px;padding:8px 12px;margin:4px 2px;cursor:pointer;
-}
+.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;width:90%;max-width:400px;
+max-height:80vh;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.5);}
+.modal-content input,textarea{width:100%;margin-bottom:8px;border:none;border-radius:4px;padding:6px;font-size:16px;}
+button{background:#2979ff;color:#fff;border:none;border-radius:4px;padding:8px 12px;margin:4px 2px;cursor:pointer;}
 footer{text-align:center;padding:10px 0;font-size:13px;color:#777;background:#1d1d1d;}
-@media(max-width:768px){
-  main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);height:70vh;}
-}
+@media(max-width:768px){main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);height:70vh;}}
 </style>
 </head>
 <body>
-<header>
-  <h1>TD Schedule</h1>
-  <div id="week-range"></div>
-</header>
-
+<header><h1>TD Schedule</h1><div id="week-range"></div></header>
 <main id="schedule"></main>
-
-<button id="add-btn" title="添加任务">
-  <svg viewBox="0 0 24 24"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/></svg>
-</button>
-
+<button id="add-btn" title="添加任务"><svg viewBox="0 0 24 24"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/></svg></button>
 <footer>Designed by Shawn</footer>
 
-<!-- 添加任务浮窗 -->
 <div id="modal">
   <div class="modal-content">
     <h2>添加任务</h2>
-    <label>日期：</label><input type="date" id="task-date">
-    <label>时间：</label><input type="time" id="task-time">
-    <label>车型：</label><input type="text" id="task-model">
-    <label>里程：</label><input type="text" id="task-mileage">
-    <label>车牌号：</label><input type="text" id="task-plate">
-    <label>项目：</label><input type="text" id="task-service">
-    <label>报价：</label><input type="text" id="task-price">
-    <label>联系方式：</label><input type="text" id="task-phone">
-    <label>备注：</label><textarea id="task-note"></textarea>
-    <button id="save-task">保存</button>
-    <button id="cancel-task">取消</button>
+    <label>日期：</label><input type="date" id="task_date">
+    <label>时间：</label><input type="time" id="task_time">
+    <label>车型：</label><input type="text" id="task_model">
+    <label>里程：</label><input type="text" id="task_mileage">
+    <label>车牌号：</label><input type="text" id="task_plate">
+    <label>项目：</label><input type="text" id="task_service">
+    <label>报价：</label><input type="text" id="task_price">
+    <label>联系方式：</label><input type="text" id="task_phone">
+    <label>备注：</label><textarea id="task_note"></textarea>
+    <button id="save_task">保存</button>
+    <button id="cancel_task">取消</button>
   </div>
 </div>
 
@@ -144,15 +73,13 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth();
-signInAnonymously(auth);
+signInAnonymously(getAuth());
 
-// 生成表格
+// -----------生成表格-----------
 function getMonday(d){d=new Date(d);const day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);return new Date(d.setDate(diff));}
 function fmt(d){return `${d.getMonth()+1}.${d.getDate()}`;}
 function buildWeeks(){
-  const now=new Date();
-  const monday=getMonday(now);
+  const now=new Date();const monday=getMonday(now);
   const nextWeek=new Date(monday);nextWeek.setDate(monday.getDate()+7);
   const week1End=new Date(monday);week1End.setDate(monday.getDate()+5);
   const week2End=new Date(nextWeek);week2End.setDate(nextWeek.getDate()+5);
@@ -162,8 +89,7 @@ function buildWeeks(){
 function renderGrid(){
   const schedule=document.getElementById("schedule");
   schedule.innerHTML="";
-  const [w1,w2]=buildWeeks();
-  const days=[];
+  const [w1,w2]=buildWeeks();const days=[];
   for(let i=0;i<6;i++)days.push(new Date(w1.getFullYear(),w1.getMonth(),w1.getDate()+i));
   for(let i=0;i<6;i++)days.push(new Date(w2.getFullYear(),w2.getMonth(),w2.getDate()+i));
   days.forEach(date=>{
@@ -177,7 +103,7 @@ function renderGrid(){
 }
 renderGrid();
 
-// 实时监听
+// -----------数据库监听-----------
 onValue(ref(db),snap=>{
   const data=snap.val()||{};
   document.querySelectorAll(".day-cell").forEach(c=>{
@@ -193,18 +119,24 @@ onValue(ref(db),snap=>{
   });
 });
 
-// 浮窗
+// -----------弹窗逻辑-----------
 const modal=document.getElementById("modal");
 document.getElementById("add-btn").onclick=()=>modal.classList.add("show");
-document.getElementById("cancel-task").onclick=()=>modal.classList.remove("show");
-document.getElementById("save-task").onclick=()=>{
-  const d=document.getElementById("task-date").value;
-  const t=document.getElementById("task-time").value;
+document.getElementById("cancel_task").onclick=()=>modal.classList.remove("show");
+document.getElementById("save_task").onclick=()=>{
+  const d=document.getElementById("task_date").value;
+  const t=document.getElementById("task_time").value;
   if(!d||!t){alert("请选择日期和时间");return;}
   const obj={
-    time:t, model:task-model.value, mileage:task-mileage.value, plate:task-plate.value,
-    service:task-service.value, price:task-price.value, phone:task-phone.value,
-    note:task-note.value, status:false
+    time:t,
+    model:document.getElementById("task_model").value,
+    mileage:document.getElementById("task_mileage").value,
+    plate:document.getElementById("task_plate").value,
+    service:document.getElementById("task_service").value,
+    price:document.getElementById("task_price").value,
+    phone:document.getElementById("task_phone").value,
+    note:document.getElementById("task_note").value,
+    status:false
   };
   const p=parseInt(t.split(":")[0])<12?"AM":"PM";
   const key=`${d}_${p}`;
