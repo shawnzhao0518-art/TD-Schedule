@@ -5,149 +5,149 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TD Schedule</title>
 <style>
-*{box-sizing:border-box;font-family:-apple-system,PingFang SC,Roboto,sans-serif;}
-body{margin:0;background:#121212;color:#f1f1f1;display:flex;flex-direction:column;min-height:100vh;}
-header{text-align:center;padding:16px 0;background:#1d1d1d;}
-header h1{margin:0;font-size:22px;}
-#week-range{font-size:14px;color:#bbb;margin-top:4px;}
-main{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,1fr);
-width:100vw;height:60vh;gap:2px;background:#2a2a2a;border-top:1px solid #333;}
-.day-cell{background:#1e1e1e;border:1px solid #333;display:flex;flex-direction:column;
-align-items:center;justify-content:flex-start;padding:4px;border-radius:4px;overflow-y:auto;}
-.task{background:#2b4b6f;color:#fff;border-radius:6px;padding:4px 6px;margin:2px 0;width:95%;
-text-align:center;font-size:12px;}
-.task.done{background:#2e6f5e;}
-#add-btn{position:fixed;bottom:24px;right:24px;width:64px;height:64px;border:none;border-radius:50%;
-background:#007bff;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;display:flex;
-align-items:center;justify-content:center;transition:transform .2s ease,background .2s ease;z-index:999;}
-#add-btn:hover{transform:scale(1.1);background:#2196f3;}
-#add-btn svg{width:32px;height:32px;fill:#fff;}
-#modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.5);align-items:center;justify-content:center;
-backdrop-filter:blur(4px);z-index:1000;}
-#modal.show{display:flex;}
-.modal-content{background:#1e1e1e;padding:20px;border-radius:10px;width:90%;max-width:400px;
-max-height:80vh;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.5);}
-.modal-content input,textarea{width:100%;margin-bottom:8px;border:none;border-radius:4px;padding:6px;font-size:16px;}
-button{background:#2979ff;color:#fff;border:none;border-radius:4px;padding:8px 12px;margin:4px 2px;cursor:pointer;}
-footer{text-align:center;padding:10px 0;font-size:13px;color:#777;background:#1d1d1d;}
-@media(max-width:768px){main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);height:70vh;}}
+body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:#121212; color:#fff; }
+header { text-align:center; padding:16px 0; background:#1e1e1e; }
+header h1 { margin:0; font-size:22px; }
+#week-range { font-size:14px; color:#bbb; margin-top:4px; }
+main { display:grid; grid-template-columns:repeat(6,1fr); grid-template-rows:repeat(2,1fr); gap:2px; padding:6px; }
+.day { border:1px solid #2a2a2a; border-radius:4px; background:#181818; display:flex; flex-direction:column; padding:6px; overflow-y:auto; }
+.task { background:#2c4370; border-radius:6px; padding:4px; margin-bottom:4px; font-size:13px; cursor:pointer; }
+#add-btn { position:fixed; right:24px; bottom:24px; width:64px; height:64px; border-radius:50%; background:#2979ff; color:#fff; font-size:36px; border:none; cursor:pointer; }
+#modal, #taskModal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.6); display:none; justify-content:center; align-items:center; z-index:10; }
+.modal-content { background:#1e1e1e; border-radius:8px; padding:20px; width:90%; max-width:400px; }
+label { display:block; margin-top:8px; font-size:14px; }
+input, select, textarea { width:100%; padding:6px; border-radius:4px; border:1px solid #333; background:#222; color:#fff; }
+button { margin-top:12px; padding:8px 12px; border:none; border-radius:4px; background:#2979ff; color:#fff; cursor:pointer; }
+footer { text-align:center; color:#888; padding:8px 0; background:#1e1e1e; }
+@media(max-width:768px){ main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);} }
 </style>
 </head>
 <body>
-<header><h1>TD Schedule</h1><div id="week-range"></div></header>
-<main id="schedule"></main>
-<button id="add-btn" title="添加任务"><svg viewBox="0 0 24 24"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/></svg></button>
-<footer>Designed by Shawn</footer>
+<header>
+  <h1>TD Schedule</h1>
+  <div id="week-range"></div>
+</header>
 
+<main id="schedule"></main>
+
+<button id="add-btn">+</button>
+
+<!-- 添加任务弹窗 -->
 <div id="modal">
   <div class="modal-content">
-    <h2>添加任务</h2>
-    <label>日期：</label><input type="date" id="task_date">
-    <label>时间：</label><input type="time" id="task_time">
-    <label>车型：</label><input type="text" id="task_model">
-    <label>里程：</label><input type="text" id="task_mileage">
-    <label>车牌号：</label><input type="text" id="task_plate">
-    <label>项目：</label><input type="text" id="task_service">
-    <label>报价：</label><input type="text" id="task_price">
-    <label>联系方式：</label><input type="text" id="task_phone">
-    <label>备注：</label><textarea id="task_note"></textarea>
-    <button id="save_task">保存</button>
-    <button id="cancel_task">取消</button>
+    <h3>添加任务</h3>
+    <label>日期：<input type="date" id="date"></label>
+    <label>时间：<input type="time" id="time"></label>
+    <label>车型：<input type="text" id="car"></label>
+    <label>里程：<input type="text" id="mileage"></label>
+    <label>车牌：<input type="text" id="plate"></label>
+    <label>项目：<input type="text" id="project"></label>
+    <label>报价：</label>
+    <div style="display:flex;gap:6px;">
+      <select id="hundreds"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>
+      <select id="tens"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>
+      <select id="ones"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>
+      <span>元</span>
+    </div>
+    <label>联系方式：<input type="text" id="contact"></label>
+    <label>备注：<textarea id="note"></textarea></label>
+    <button id="save">保存</button>
+    <button onclick="closeModal()">取消</button>
   </div>
 </div>
 
+<!-- 查看任务详情 -->
+<div id="taskModal">
+  <div class="modal-content">
+    <h3>任务详情</h3>
+    <p id="taskInfo"></p>
+    <button id="deleteBtn">🗑 删除任务</button>
+    <button onclick="closeTaskModal()">关闭</button>
+  </div>
+</div>
+
+<footer>Designed by Shawn</footer>
+
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+const supabaseUrl = 'https://mgrorhbschtyrdrekfhb.supabase.co'
+const supabaseKey = 'sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc'
+const supabase = createClient(supabaseUrl, supabaseKey)
 
-const firebaseConfig = {
-  apiKey:"AIzaSyAyyrP8eLT174psGD9MJpZkK2iZ-_dbpS0",
-  authDomain:"td-schedule-c010f.firebaseapp.com",
-  databaseURL:"https://td-schedule-c010f-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:"td-schedule-c010f",
-  storageBucket:"td-schedule-c010f.firebasestorage.app",
-  messagingSenderId:"747320547273",
-  appId:"1:747320547273:web:15a251e4fbb45dd0557a18"
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-signInAnonymously(getAuth());
+// 初始化界面
+const schedule = document.getElementById('schedule')
+const modal = document.getElementById('modal')
+const weekRange = document.getElementById('week-range')
 
-// -----------生成表格-----------
-function getMonday(d){d=new Date(d);const day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);return new Date(d.setDate(diff));}
-function fmt(d){return `${d.getMonth()+1}.${d.getDate()}`;}
-function buildWeeks(){
-  const now=new Date();const monday=getMonday(now);
-  const nextWeek=new Date(monday);nextWeek.setDate(monday.getDate()+7);
-  const week1End=new Date(monday);week1End.setDate(monday.getDate()+5);
-  const week2End=new Date(nextWeek);week2End.setDate(nextWeek.getDate()+5);
-  document.getElementById("week-range").textContent=`【本周 ${fmt(monday)}–${fmt(week1End)}】 | 【下周 ${fmt(nextWeek)}–${fmt(week2End)}】`;
-  return [monday,nextWeek];
+function getWeekRange(offset=0){
+  const now=new Date();const first=now.getDate()-now.getDay()+1+offset*7;
+  const start=new Date(now.setDate(first));const end=new Date(now.setDate(first+5));
+  return `${start.getMonth()+1}.${start.getDate()} - ${end.getMonth()+1}.${end.getDate()}`
 }
-function renderGrid(){
-  const schedule=document.getElementById("schedule");
-  schedule.innerHTML="";
-  const [w1,w2]=buildWeeks();const days=[];
-  for(let i=0;i<6;i++)days.push(new Date(w1.getFullYear(),w1.getMonth(),w1.getDate()+i));
-  for(let i=0;i<6;i++)days.push(new Date(w2.getFullYear(),w2.getMonth(),w2.getDate()+i));
-  days.forEach(date=>{
-    ["AM","PM"].forEach(period=>{
-      const div=document.createElement("div");
-      div.className="day-cell";
-      div.dataset.key=`${date.toISOString().split("T")[0]}_${period}`;
-      schedule.appendChild(div);
-    });
-  });
+weekRange.textContent = `本周 ${getWeekRange(0)} ｜ 下周 ${getWeekRange(1)}`
+
+// 加载任务
+async function loadTasks(){
+  schedule.innerHTML=''
+  const days=['周一','周二','周三','周四','周五','周六']
+  for(let i=0;i<6;i++){
+    const div=document.createElement('div')
+    div.className='day'
+    div.innerHTML=`<b>${days[i]}</b>`
+    schedule.appendChild(div)
+  }
+  const { data } = await supabase.from('tasks').select('*').order('date')
+  data.forEach(task=>{
+    const date=new Date(task.date);let index=date.getDay()-1;if(index<0||index>5)return;
+    const dayBox=schedule.children[index]
+    const el=document.createElement('div')
+    el.className='task'; el.dataset.id=task.id
+    el.textContent=`${task.time || ''} ${task.project || ''}`
+    el.onclick=()=>showTaskDetail(task)
+    dayBox.appendChild(el)
+  })
 }
-renderGrid();
 
-// -----------数据库监听-----------
-onValue(ref(db),snap=>{
-  const data=snap.val()||{};
-  document.querySelectorAll(".day-cell").forEach(c=>{
-    c.innerHTML="";
-    const key=c.dataset.key;
-    const list=data[key]||[];
-    list.forEach(i=>{
-      const div=document.createElement("div");
-      div.className="task"+(i.status?" done":"");
-      div.textContent=`${i.time} ${i.service}`;
-      c.appendChild(div);
-    });
-  });
-});
+// 添加任务
+document.getElementById('add-btn').onclick=()=>modal.style.display='flex'
+function closeModal(){modal.style.display='none'}
 
-// -----------弹窗逻辑-----------
-const modal=document.getElementById("modal");
-document.getElementById("add-btn").onclick=()=>modal.classList.add("show");
-document.getElementById("cancel_task").onclick=()=>modal.classList.remove("show");
-document.getElementById("save_task").onclick=()=>{
-  const d=document.getElementById("task_date").value;
-  const t=document.getElementById("task_time").value;
-  if(!d||!t){alert("请选择日期和时间");return;}
-  const obj={
-    time:t,
-    model:document.getElementById("task_model").value,
-    mileage:document.getElementById("task_mileage").value,
-    plate:document.getElementById("task_plate").value,
-    service:document.getElementById("task_service").value,
-    price:document.getElementById("task_price").value,
-    phone:document.getElementById("task_phone").value,
-    note:document.getElementById("task_note").value,
-    status:false
-  };
-  const p=parseInt(t.split(":")[0])<12?"AM":"PM";
-  const key=`${d}_${p}`;
-  const r=ref(db,key);
-  get(r).then(s=>{
-    const l=s.val()||[];
-    l.push(obj);
-    set(r,l);
-    modal.classList.remove("show");
-  });
-};
+document.getElementById('save').onclick=async()=>{
+  const price = parseInt(document.getElementById('hundreds').value)*100 + parseInt(document.getElementById('tens').value)*10 + parseInt(document.getElementById('ones').value)
+  const data = {
+    date:document.getElementById('date').value,
+    time:document.getElementById('time').value,
+    car:document.getElementById('car').value,
+    mileage:document.getElementById('mileage').value,
+    plate:document.getElementById('plate').value,
+    project:document.getElementById('project').value,
+    price:price.toString(),
+    contact:document.getElementById('contact').value,
+    note:document.getElementById('note').value,
+  }
+  const { error } = await supabase.from('tasks').insert([data])
+  if(error){alert('❌ 保存失败');console.error(error)} else {alert('✅ 已保存');closeModal();loadTasks()}
+}
+
+// 查看与删除
+let currentTaskId=null
+function showTaskDetail(task){
+  currentTaskId=task.id
+  document.getElementById('taskInfo').innerText=
+    `${task.date} ${task.time}\n${task.car}\n${task.project}\n报价：${task.price} 元\n备注：${task.note||''}`
+  document.getElementById('taskModal').style.display='flex'
+}
+function closeTaskModal(){document.getElementById('taskModal').style.display='none'}
+document.getElementById('deleteBtn').onclick=async()=>{
+  if(!currentTaskId)return
+  const ok=confirm('确定删除该任务？')
+  if(!ok)return
+  await supabase.from('tasks').delete().eq('id',currentTaskId)
+  alert('✅ 已删除');closeTaskModal();loadTasks()
+}
+
+// 初始化
+loadTasks()
 </script>
 </body>
 </html>
