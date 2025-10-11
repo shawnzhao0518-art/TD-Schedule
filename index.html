@@ -20,6 +20,10 @@
       border-bottom: 1px solid #2a2a2a;
     }
 
+    header h1 {
+      margin-bottom: 6px;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -31,27 +35,29 @@
       border: 1px solid #333;
       text-align: center;
       vertical-align: top;
-      padding: 6px;
+      padding: 10px;
     }
 
     th {
       background: #1d1d1d;
       font-weight: 600;
       color: #eee;
+      height: 48px;
     }
 
     .label-cell {
       background: #1d1d1d;
       font-weight: bold;
       width: 90px;
+      color: #fff;
     }
 
     .task {
       background: #2c4370;
       color: #fff;
-      margin: 4px 0;
-      padding: 4px 6px;
-      border-radius: 4px;
+      margin: 5px 0;
+      padding: 5px 6px;
+      border-radius: 5px;
       font-size: 13px;
       display: flex;
       justify-content: space-between;
@@ -61,14 +67,14 @@
     .task button {
       background: none;
       border: none;
-      color: #bbb;
+      color: #ccc;
       cursor: pointer;
       font-size: 12px;
     }
 
     footer {
       text-align: center;
-      padding: 10px;
+      padding: 12px;
       color: #777;
       border-top: 1px solid #2a2a2a;
       background: #141414;
@@ -132,7 +138,7 @@
 <body>
   <header>
     <h1>TD Schedule</h1>
-    <p>本周 · 下周 | 上午 / 下午</p>
+    <p id="dateRange">加载中...</p>
   </header>
 
   <table id="schedule">
@@ -157,10 +163,6 @@
   <form id="taskForm">
     <h3>添加任务</h3>
     <input type="date" id="date" required>
-    <select id="week">
-      <option value="本周">本周</option>
-      <option value="下周">下周</option>
-    </select>
     <select id="time">
       <option value="上午">上午</option>
       <option value="下午">下午</option>
@@ -184,14 +186,29 @@
     const tbody = document.getElementById('schedule-body');
     const addBtn = document.getElementById('addBtn');
     const form = document.getElementById('taskForm');
-    const weekSelect = document.getElementById('week');
+    const dateRange = document.getElementById('dateRange');
 
-    function autoSelectWeek() {
+    // 自动计算日期范围
+    function getWeekRanges() {
       const today = new Date();
-      const day = today.getDay();
-      weekSelect.value = (day === 0) ? "下周" : "本周";
+      const day = today.getDay() === 0 ? 7 : today.getDay(); // 周日作为7
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (day - 1));
+      const saturday = new Date(monday);
+      saturday.setDate(monday.getDate() + 5);
+
+      const nextMonday = new Date(monday);
+      nextMonday.setDate(monday.getDate() + 7);
+      const nextSaturday = new Date(nextMonday);
+      nextSaturday.setDate(nextMonday.getDate() + 5);
+
+      function fmt(d) {
+        return `${d.getMonth() + 1}.${d.getDate()}`;
+      }
+      dateRange.textContent = `本周 ${fmt(monday)}–${fmt(saturday)} ｜ 下周 ${fmt(nextMonday)}–${fmt(nextSaturday)}`;
     }
-    autoSelectWeek();
+
+    getWeekRanges();
 
     const weeks = ['本周上午','本周下午','下周上午','下周下午'];
     const days = ['周一','周二','周三','周四','周五','周六'];
@@ -227,7 +244,6 @@
       e.preventDefault();
       const task = {
         date: document.getElementById('date').value,
-        week: document.getElementById('week').value,
         time: document.getElementById('time').value,
         car: document.getElementById('car').value,
         mileage: document.getElementById('mileage').value,
@@ -244,7 +260,6 @@
         alert('✅ 添加成功');
         form.reset();
         form.style.display = 'none';
-        autoSelectWeek();
         loadTasks();
       }
     });
@@ -259,8 +274,7 @@
 
       data.forEach(task => {
         const td = Array.from(document.querySelectorAll('#schedule td')).find(
-          el => el.dataset.week === task.week &&
-                el.dataset.time === task.time &&
+          el => el.dataset.time === task.time &&
                 el.dataset.day === (task.day || task.date_day)
         );
         if (td) {
