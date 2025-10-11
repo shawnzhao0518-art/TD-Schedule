@@ -6,8 +6,8 @@
 <title>TD Schedule</title>
 <style>
 *{box-sizing:border-box;font-family:-apple-system,PingFang SC,Roboto,sans-serif;}
-body{margin:0;background:#121212;color:#f1f1f1;display:flex;flex-direction:column;min-height:100vh;overflow:hidden;}
-header{text-align:center;padding:16px 0;background:#1d1d1d;position:sticky;top:0;z-index:10;}
+body{margin:0;background:#121212;color:#f1f1f1;display:flex;flex-direction:column;min-height:100vh;}
+header{text-align:center;padding:16px 0;background:#1d1d1d;}
 header h1{margin:0;font-size:22px;}
 #week-range{font-size:14px;color:#bbb;margin-top:4px;}
 main{
@@ -15,34 +15,32 @@ main{
   display:grid;
   grid-template-columns:repeat(6,1fr);
   grid-template-rows:repeat(2,1fr);
+  width:100vw;       /* 永远占满屏幕宽度 */
+  height:60vh;       /* 占屏幕60%高度，可调整 */
   gap:2px;
   background:#2a2a2a;
-  height:60vh; /* 控制整体高度 */
-  margin:16px;
-  border:1px solid #333;
-  border-radius:8px;
+  border-top:1px solid #333;
 }
 .day-cell{
   background:#1e1e1e;
-  border:1px solid #2f2f2f;
-  border-radius:4px;
-  position:relative;
-  padding:4px;
-  overflow:hidden;
+  border:1px solid #333;
   display:flex;
+  flex-direction:column;
   align-items:center;
-  justify-content:center;
-  min-height:80px;
+  justify-content:flex-start;
+  padding:4px;
+  border-radius:4px;
+  overflow-y:auto;
 }
 .task{
   background:#2b4b6f;
-  margin:2px 0;
-  padding:4px 6px;
+  color:#fff;
   border-radius:6px;
-  font-size:12px;
-  cursor:pointer;
-  width:90%;
+  padding:4px 6px;
+  margin:2px 0;
+  width:95%;
   text-align:center;
+  font-size:12px;
 }
 .task.done{background:#2e6f5e;}
 #add-btn{
@@ -64,19 +62,16 @@ main{
 }
 #add-btn:hover{transform:scale(1.1);background:#2196f3;}
 #add-btn svg{width:32px;height:32px;fill:#fff;}
-footer{text-align:center;padding:10px 0;font-size:13px;color:#777;background:#1d1d1d;}
 #modal{
+  display:none;
   position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
-  background:rgba(0,0,0,.5);
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.5);
+  align-items:center;justify-content:center;
   backdrop-filter:blur(4px);
   z-index:1000;
 }
-.hidden{display:none;}
+#modal.show{display:flex;}
 .modal-content{
   background:#1e1e1e;
   padding:20px;
@@ -88,22 +83,14 @@ footer{text-align:center;padding:10px 0;font-size:13px;color:#777;background:#1d
   box-shadow:0 6px 20px rgba(0,0,0,0.5);
 }
 .modal-content input,textarea{
-  width:100%;
-  margin-bottom:8px;
-  border:none;
-  border-radius:4px;
-  padding:6px;
-  font-size:16px;
+  width:100%;margin-bottom:8px;border:none;
+  border-radius:4px;padding:6px;font-size:16px;
 }
 button{
-  background:#2979ff;
-  color:#fff;
-  border:none;
-  border-radius:4px;
-  padding:8px 12px;
-  margin:4px 2px;
-  cursor:pointer;
+  background:#2979ff;color:#fff;border:none;
+  border-radius:4px;padding:8px 12px;margin:4px 2px;cursor:pointer;
 }
+footer{text-align:center;padding:10px 0;font-size:13px;color:#777;background:#1d1d1d;}
 @media(max-width:768px){
   main{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);height:70vh;}
 }
@@ -124,17 +111,17 @@ button{
 <footer>Designed by Shawn</footer>
 
 <!-- 添加任务浮窗 -->
-<div id="modal" class="hidden">
+<div id="modal">
   <div class="modal-content">
     <h2>添加任务</h2>
-    <label>日期：</label><input type="date" id="task-date" />
-    <label>时间：</label><input type="time" id="task-time" />
-    <label>车型：</label><input type="text" id="task-model" />
-    <label>里程：</label><input type="text" id="task-mileage" />
-    <label>车牌号：</label><input type="text" id="task-plate" />
-    <label>项目：</label><input type="text" id="task-service" />
-    <label>报价：</label><input type="text" id="task-price" />
-    <label>联系方式：</label><input type="text" id="task-phone" />
+    <label>日期：</label><input type="date" id="task-date">
+    <label>时间：</label><input type="time" id="task-time">
+    <label>车型：</label><input type="text" id="task-model">
+    <label>里程：</label><input type="text" id="task-mileage">
+    <label>车牌号：</label><input type="text" id="task-plate">
+    <label>项目：</label><input type="text" id="task-service">
+    <label>报价：</label><input type="text" id="task-price">
+    <label>联系方式：</label><input type="text" id="task-phone">
     <label>备注：</label><textarea id="task-note"></textarea>
     <button id="save-task">保存</button>
     <button id="cancel-task">取消</button>
@@ -146,7 +133,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebas
 import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
-// 🔧 Firebase配置
 const firebaseConfig = {
   apiKey:"AIzaSyAyyrP8eLT174psGD9MJpZkK2iZ-_dbpS0",
   authDomain:"td-schedule-c010f.firebaseapp.com",
@@ -161,7 +147,7 @@ const db = getDatabase(app);
 const auth = getAuth();
 signInAnonymously(auth);
 
-// 🗓️ 构建日期表格
+// 生成表格
 function getMonday(d){d=new Date(d);const day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);return new Date(d.setDate(diff));}
 function fmt(d){return `${d.getMonth()+1}.${d.getDate()}`;}
 function buildWeeks(){
@@ -173,8 +159,6 @@ function buildWeeks(){
   document.getElementById("week-range").textContent=`【本周 ${fmt(monday)}–${fmt(week1End)}】 | 【下周 ${fmt(nextWeek)}–${fmt(week2End)}】`;
   return [monday,nextWeek];
 }
-
-// 渲染空表格
 function renderGrid(){
   const schedule=document.getElementById("schedule");
   schedule.innerHTML="";
@@ -193,7 +177,7 @@ function renderGrid(){
 }
 renderGrid();
 
-// 🔄 监听数据库变化
+// 实时监听
 onValue(ref(db),snap=>{
   const data=snap.val()||{};
   document.querySelectorAll(".day-cell").forEach(c=>{
@@ -209,24 +193,18 @@ onValue(ref(db),snap=>{
   });
 });
 
-// ✳️ 添加任务逻辑
+// 浮窗
 const modal=document.getElementById("modal");
-document.getElementById("add-btn").onclick=()=>modal.classList.remove("hidden");
-document.getElementById("cancel-task").onclick=()=>modal.classList.add("hidden");
+document.getElementById("add-btn").onclick=()=>modal.classList.add("show");
+document.getElementById("cancel-task").onclick=()=>modal.classList.remove("show");
 document.getElementById("save-task").onclick=()=>{
   const d=document.getElementById("task-date").value;
   const t=document.getElementById("task-time").value;
   if(!d||!t){alert("请选择日期和时间");return;}
   const obj={
-    time:t,
-    model:task-model.value,
-    mileage:task-mileage.value,
-    plate:task-plate.value,
-    service:task-service.value,
-    price:task-price.value,
-    phone:task-phone.value,
-    note:task-note.value,
-    status:false
+    time:t, model:task-model.value, mileage:task-mileage.value, plate:task-plate.value,
+    service:task-service.value, price:task-price.value, phone:task-phone.value,
+    note:task-note.value, status:false
   };
   const p=parseInt(t.split(":")[0])<12?"AM":"PM";
   const key=`${d}_${p}`;
@@ -235,7 +213,7 @@ document.getElementById("save-task").onclick=()=>{
     const l=s.val()||[];
     l.push(obj);
     set(r,l);
-    modal.classList.add("hidden");
+    modal.classList.remove("show");
   });
 };
 </script>
