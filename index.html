@@ -25,7 +25,6 @@
       border-collapse: collapse;
       table-layout: fixed;
       background: #181818;
-      margin: 0;
     }
 
     th, td {
@@ -104,7 +103,9 @@
       display: none;
       flex-direction: column;
       gap: 8px;
-      width: 260px;
+      width: 280px;
+      max-height: 80vh;
+      overflow-y: auto;
     }
 
     form input, form select {
@@ -131,7 +132,7 @@
 <body>
   <header>
     <h1>TD Schedule</h1>
-    <p>本周 & 下周 · 上午 / 下午</p>
+    <p>本周 · 下周 | 上午 / 下午</p>
   </header>
 
   <table id="schedule">
@@ -154,6 +155,7 @@
   <button class="add-btn" id="addBtn">+</button>
 
   <form id="taskForm">
+    <h3>添加任务</h3>
     <input type="date" id="date" required>
     <select id="week">
       <option value="本周">本周</option>
@@ -163,9 +165,14 @@
       <option value="上午">上午</option>
       <option value="下午">下午</option>
     </select>
-    <input type="text" id="car" placeholder="车辆" required>
-    <input type="number" id="price" placeholder="金额" required>
-    <button type="submit">添加任务</button>
+    <input type="text" id="car" placeholder="车型" required>
+    <input type="text" id="mileage" placeholder="里程">
+    <input type="text" id="plate" placeholder="车牌号">
+    <input type="text" id="project" placeholder="项目内容">
+    <input type="number" id="price" placeholder="报价金额" required>
+    <input type="text" id="contact" placeholder="联系方式">
+    <input type="text" id="note" placeholder="备注">
+    <button type="submit">保存</button>
   </form>
 
   <script>
@@ -177,6 +184,14 @@
     const tbody = document.getElementById('schedule-body');
     const addBtn = document.getElementById('addBtn');
     const form = document.getElementById('taskForm');
+    const weekSelect = document.getElementById('week');
+
+    function autoSelectWeek() {
+      const today = new Date();
+      const day = today.getDay();
+      weekSelect.value = (day === 0) ? "下周" : "本周";
+    }
+    autoSelectWeek();
 
     const weeks = ['本周上午','本周下午','下周上午','下周下午'];
     const days = ['周一','周二','周三','周四','周五','周六'];
@@ -195,7 +210,7 @@
           td.dataset.week = label.includes('下周') ? '下周' : '本周';
           td.dataset.time = label.includes('上午') ? '上午' : '下午';
           td.dataset.day = days[i];
-          td.innerHTML = '&nbsp;'; // 保持格子占位
+          td.innerHTML = '&nbsp;';
           tr.appendChild(td);
         }
         tbody.appendChild(tr);
@@ -204,30 +219,36 @@
 
     buildTable();
 
-    // 添加任务
     addBtn.addEventListener('click', () => {
       form.style.display = form.style.display === 'flex' ? 'none' : 'flex';
     });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const date = document.getElementById('date').value;
-      const week = document.getElementById('week').value;
-      const time = document.getElementById('time').value;
-      const car = document.getElementById('car').value;
-      const price = parseFloat(document.getElementById('price').value);
+      const task = {
+        date: document.getElementById('date').value,
+        week: document.getElementById('week').value,
+        time: document.getElementById('time').value,
+        car: document.getElementById('car').value,
+        mileage: document.getElementById('mileage').value,
+        plate: document.getElementById('plate').value,
+        project: document.getElementById('project').value,
+        price: parseFloat(document.getElementById('price').value),
+        contact: document.getElementById('contact').value,
+        note: document.getElementById('note').value,
+      };
 
-      const { error } = await db.from('tasks').insert([{ date, week, time, car, price }]);
+      const { error } = await db.from('tasks').insert([task]);
       if (error) alert('❌ 插入失败: ' + error.message);
       else {
         alert('✅ 添加成功');
         form.reset();
         form.style.display = 'none';
+        autoSelectWeek();
         loadTasks();
       }
     });
 
-    // 加载任务
     async function loadTasks() {
       const { data, error } = await db.from('tasks').select('*');
       if (error) { console.error(error); return; }
@@ -238,21 +259,20 @@
 
       data.forEach(task => {
         const td = Array.from(document.querySelectorAll('#schedule td')).find(
-          el => el.dataset &&
-                el.dataset.week === task.week &&
+          el => el.dataset.week === task.week &&
                 el.dataset.time === task.time &&
                 el.dataset.day === (task.day || task.date_day)
         );
         if (td) {
           const el = document.createElement('div');
           el.className = 'task';
-          el.innerHTML = `${task.car} ¥${task.price} <button onclick="deleteTask('${task.id}')">x</button>`;
+          el.innerHTML = `${task.car || '未命名'} ¥${task.price || ''} 
+                          <button onclick="deleteTask('${task.id}')">x</button>`;
           td.appendChild(el);
         }
       });
     }
 
-    // 删除任务
     async function deleteTask(id) {
       const { error } = await db.from('tasks').delete().eq('id', id);
       if (error) alert('❌ 删除失败: ' + error.message);
