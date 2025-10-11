@@ -20,44 +20,37 @@
       border-bottom: 1px solid #2a2a2a;
     }
 
-    main {
-      display: grid;
-      grid-template-columns: 80px repeat(6, 1fr);
-      grid-template-rows: repeat(4, 1fr);
-      gap: 2px;
-      padding: 4px;
-      height: 80vh;
-      background: #2a2a2a;
-    }
-
-    .time-label {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #333;
-      font-weight: bold;
-      background: #1d1d1d;
-      color: #fff;
-    }
-
-    .day {
-      border: 2px solid #333;
-      display: flex;
-      flex-direction: column;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
       background: #181818;
+      margin: 0;
     }
 
-    .half {
-      flex: 1;
-      border-top: 1px solid #444;
-      padding: 4px;
-      overflow-y: auto;
+    th, td {
+      border: 1px solid #333;
+      text-align: center;
+      vertical-align: top;
+      padding: 6px;
+    }
+
+    th {
+      background: #1d1d1d;
+      font-weight: 600;
+      color: #eee;
+    }
+
+    .label-cell {
+      background: #1d1d1d;
+      font-weight: bold;
+      width: 90px;
     }
 
     .task {
       background: #2c4370;
       color: #fff;
-      margin: 3px 0;
+      margin: 4px 0;
       padding: 4px 6px;
       border-radius: 4px;
       font-size: 13px;
@@ -79,23 +72,25 @@
       padding: 10px;
       color: #777;
       border-top: 1px solid #2a2a2a;
+      background: #141414;
     }
 
     .add-btn {
       position: fixed;
       bottom: 24px;
       right: 24px;
-      width: 52px;
-      height: 52px;
+      width: 56px;
+      height: 56px;
       background: #007aff;
       color: #fff;
-      font-size: 28px;
+      font-size: 32px;
       border-radius: 50%;
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border: none;
     }
 
     form {
@@ -109,7 +104,7 @@
       display: none;
       flex-direction: column;
       gap: 8px;
-      width: 250px;
+      width: 260px;
     }
 
     form input, form select {
@@ -130,22 +125,40 @@
       font-weight: bold;
       cursor: pointer;
     }
+
   </style>
 </head>
 <body>
   <header>
     <h1>TD Schedule</h1>
-    <p>本周 10.6 - 10.11　|　下周 10.13 - 10.18</p>
+    <p>本周 & 下周 · 上午 / 下午</p>
   </header>
 
-  <main id="schedule"></main>
+  <table id="schedule">
+    <thead>
+      <tr>
+        <th></th>
+        <th>周一</th>
+        <th>周二</th>
+        <th>周三</th>
+        <th>周四</th>
+        <th>周五</th>
+        <th>周六</th>
+      </tr>
+    </thead>
+    <tbody id="schedule-body"></tbody>
+  </table>
 
   <footer>Designed by Shawn</footer>
 
-  <div class="add-btn" id="addBtn">+</div>
+  <button class="add-btn" id="addBtn">+</button>
 
   <form id="taskForm">
     <input type="date" id="date" required>
+    <select id="week">
+      <option value="本周">本周</option>
+      <option value="下周">下周</option>
+    </select>
     <select id="time">
       <option value="上午">上午</option>
       <option value="下午">下午</option>
@@ -161,41 +174,37 @@
     const supabaseKey = "sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc";
     const db = createClient(supabaseUrl, supabaseKey);
 
-    const schedule = document.getElementById('schedule');
-    const days = ['周一','周二','周三','周四','周五','周六'];
-    const weeks = ['本周','下周'];
-
-    // 🧱 布局创建
-    weeks.forEach(week => {
-      ['上午','下午'].forEach(label => {
-        const labelCell = document.createElement('div');
-        labelCell.className = 'time-label';
-        labelCell.textContent = `${week}${label}`;
-        schedule.appendChild(labelCell);
-
-        days.forEach(() => {
-          const day = document.createElement('div');
-          day.className = 'day';
-
-          const am = document.createElement('div');
-          am.className = 'half';
-          am.dataset.session = '上午';
-
-          const pm = document.createElement('div');
-          pm.className = 'half';
-          pm.dataset.session = '下午';
-
-          day.appendChild(am);
-          day.appendChild(pm);
-          schedule.appendChild(day);
-        });
-      });
-    });
-
-    // 🧩 添加任务表单
+    const tbody = document.getElementById('schedule-body');
     const addBtn = document.getElementById('addBtn');
     const form = document.getElementById('taskForm');
 
+    const weeks = ['本周上午','本周下午','下周上午','下周下午'];
+    const days = ['周一','周二','周三','周四','周五','周六'];
+
+    function buildTable() {
+      tbody.innerHTML = '';
+      weeks.forEach(label => {
+        const tr = document.createElement('tr');
+        const labelCell = document.createElement('td');
+        labelCell.textContent = label;
+        labelCell.className = 'label-cell';
+        tr.appendChild(labelCell);
+
+        for (let i = 0; i < 6; i++) {
+          const td = document.createElement('td');
+          td.dataset.week = label.includes('下周') ? '下周' : '本周';
+          td.dataset.time = label.includes('上午') ? '上午' : '下午';
+          td.dataset.day = days[i];
+          td.innerHTML = '&nbsp;'; // 保持格子占位
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      });
+    }
+
+    buildTable();
+
+    // 添加任务
     addBtn.addEventListener('click', () => {
       form.style.display = form.style.display === 'flex' ? 'none' : 'flex';
     });
@@ -203,11 +212,12 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const date = document.getElementById('date').value;
+      const week = document.getElementById('week').value;
       const time = document.getElementById('time').value;
       const car = document.getElementById('car').value;
       const price = parseFloat(document.getElementById('price').value);
 
-      const { error } = await db.from('tasks').insert([{ date, time, car, price }]);
+      const { error } = await db.from('tasks').insert([{ date, week, time, car, price }]);
       if (error) alert('❌ 插入失败: ' + error.message);
       else {
         alert('✅ 添加成功');
@@ -217,24 +227,32 @@
       }
     });
 
-    // 🧾 载入任务
+    // 加载任务
     async function loadTasks() {
       const { data, error } = await db.from('tasks').select('*');
       if (error) { console.error(error); return; }
 
-      document.querySelectorAll('.half').forEach(h => h.innerHTML = '');
+      document.querySelectorAll('#schedule td').forEach(td => {
+        if (!td.classList.contains('label-cell')) td.innerHTML = '&nbsp;';
+      });
+
       data.forEach(task => {
-        const divs = document.querySelectorAll(`.half[data-session="${task.time}"]`);
-        divs.forEach(div => {
+        const td = Array.from(document.querySelectorAll('#schedule td')).find(
+          el => el.dataset &&
+                el.dataset.week === task.week &&
+                el.dataset.time === task.time &&
+                el.dataset.day === (task.day || task.date_day)
+        );
+        if (td) {
           const el = document.createElement('div');
           el.className = 'task';
           el.innerHTML = `${task.car} ¥${task.price} <button onclick="deleteTask('${task.id}')">x</button>`;
-          div.appendChild(el);
-        });
+          td.appendChild(el);
+        }
       });
     }
 
-    // 🗑 删除任务
+    // 删除任务
     async function deleteTask(id) {
       const { error } = await db.from('tasks').delete().eq('id', id);
       if (error) alert('❌ 删除失败: ' + error.message);
