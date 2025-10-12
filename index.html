@@ -1,268 +1,214 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TD Schedule</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body {
-      background: #111;
-      color: #fff;
-      font-family: system-ui, -apple-system, sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TD Schedule</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body {
+  background:#111;color:#fff;font-family:system-ui,-apple-system,sans-serif;
+  display:flex;flex-direction:column;align-items:center;margin:0;
+}
+header{text-align:center;margin:20px 0;}
+h1{font-size:28px;margin-bottom:8px;}
+#subtitle{font-size:16px;color:#aaa;}
 
-    header { text-align: center; margin: 20px 0; }
-    h1 { font-size: 28px; margin-bottom: 8px; }
-    #subtitle { font-size: 16px; color: #aaa; }
+.header-row{display:grid;grid-template-columns:100px repeat(6,1fr);
+width:95%;max-width:1100px;margin-top:8px;gap:2px;}
+.header-cell{border:2px solid #333;background:#222;font-weight:bold;
+text-align:center;padding:10px 0;}
+.header-cell:first-child{background:transparent;border:none;}
 
-    .schedule {
-      display: grid;
-      grid-template-columns: 100px repeat(6, 1fr);
-      grid-template-rows: repeat(4, 120px);
-      gap: 2px;
-      width: 95%;
-      max-width: 1100px;
-      border: 3px solid #444;
-      border-radius: 6px;
-      overflow: hidden;
-      background: #1a1a1a;
-    }
+.schedule{display:grid;grid-template-columns:100px repeat(6,1fr);
+grid-template-rows:repeat(4,120px);gap:2px;width:95%;
+max-width:1100px;border:3px solid #444;border-radius:6px;
+background:#1a1a1a;}
+.cell{border:2px solid #333;display:flex;flex-direction:column;
+align-items:flex-start;justify-content:flex-start;padding:8px;
+font-size:15px;background:#1a1a1a;}
+.time-label{background:#222;font-weight:bold;text-align:center;
+display:flex;align-items:center;justify-content:center;}
 
-    .cell {
-      border: 2px solid #333;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
-      padding: 8px;
-      text-align: left;
-      font-size: 15px;
-      background: #1a1a1a;
-      position: relative;
-    }
+.task{cursor:pointer;background:#007aff33;padding:4px 6px;border-radius:4px;
+font-size:14px;margin:2px 0;width:100%;display:flex;justify-content:space-between;
+align-items:center;}
+.task button{background:transparent;border:none;color:#ff5555;
+font-weight:bold;cursor:pointer;}
 
-    .header-row {
-      display: grid;
-      grid-template-columns: 100px repeat(6, 1fr);
-      width: 95%;
-      max-width: 1100px;
-      margin-top: 8px;
-      gap: 2px;
-    }
-    .header-cell {
-      border: 2px solid #333;
-      background: #222;
-      font-weight: bold;
-      text-align: center;
-      padding: 10px 0;
-    }
-    .header-cell:first-child { background: transparent; border: none; }
+.add-btn{position:fixed;bottom:30px;right:30px;width:60px;height:60px;
+background:#007aff;border-radius:50%;color:#fff;font-size:40px;
+border:none;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);}
+footer{margin:20px;color:#666;font-size:14px;}
 
-    .time-label {
-      font-weight: bold;
-      background: #222;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      display: flex;
-    }
-
-    .task {
-      cursor: pointer;
-      background: #007aff33;
-      padding: 4px 6px;
-      border-radius: 4px;
-      font-size: 14px;
-      margin: 2px 0;
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .task button {
-      background: transparent;
-      border: none;
-      color: #ff5555;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .add-btn {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      width: 60px;
-      height: 60px;
-      background: #007aff;
-      border-radius: 50%;
-      color: white;
-      font-size: 40px;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    }
-
-    footer { margin: 20px; color: #666; font-size: 14px; }
-
-    .modal {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: none; justify-content: center; align-items: center;
-    }
-    .modal-content {
-      background: #222; padding: 20px; border-radius: 8px;
-      width: 90%; max-width: 420px; line-height: 1.6;
-      max-height: 90vh; overflow-y: auto;
-    }
-    input, textarea {
-      width: 100%; background: #333; color: #fff;
-      border: none; border-radius: 4px; padding: 8px;
-      margin-top: 6px;
-    }
-    .form-buttons {
-      margin-top: 12px;
-      display: flex; justify-content: space-between;
-    }
-    .save-btn, .cancel-btn {
-      border: none; padding: 8px 16px; border-radius: 6px;
-      font-weight: bold; cursor: pointer;
-    }
-    .save-btn { background: #28a745; color: white; }
-    .cancel-btn { background: #dc3545; color: white; }
-  </style>
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);
+display:none;justify-content:center;align-items:center;}
+.modal-content{background:#222;padding:20px;border-radius:8px;
+width:90%;max-width:420px;line-height:1.6;max-height:90vh;overflow-y:auto;}
+input,textarea{width:100%;background:#333;color:#fff;border:none;
+border-radius:4px;padding:8px;margin-top:6px;}
+.form-buttons{margin-top:12px;display:flex;justify-content:space-between;}
+.save-btn,.cancel-btn{border:none;padding:8px 16px;border-radius:6px;
+font-weight:bold;cursor:pointer;}
+.save-btn{background:#28a745;color:white;}
+.cancel-btn{background:#dc3545;color:white;}
+</style>
 </head>
 <body>
-  <header>
-    <h1>TD Schedule</h1>
-    <div id="subtitle"></div>
-  </header>
+<header>
+  <h1>TD Schedule</h1>
+  <div id="subtitle"></div>
+</header>
 
-  <div class="header-row">
-    <div></div>
-    <div class="header-cell">周一</div>
-    <div class="header-cell">周二</div>
-    <div class="header-cell">周三</div>
-    <div class="header-cell">周四</div>
-    <div class="header-cell">周五</div>
-    <div class="header-cell">周六</div>
+<div class="header-row">
+  <div></div>
+  <div class="header-cell">周一</div>
+  <div class="header-cell">周二</div>
+  <div class="header-cell">周三</div>
+  <div class="header-cell">周四</div>
+  <div class="header-cell">周五</div>
+  <div class="header-cell">周六</div>
+</div>
+
+<div class="schedule"></div>
+
+<footer>Designed by Shawn</footer>
+<button class="add-btn" onclick="openModal()">+</button>
+
+<div id="taskModal" class="modal">
+  <div class="modal-content">
+    <h3>添加任务</h3>
+    <form id="addForm">
+      <label>日期：</label><input type="date" name="date" required>
+      <label>时间：</label><input type="time" name="time" required>
+      <label>车型：</label><input type="text" name="car">
+      <label>里程：</label><input type="text" name="mileage">
+      <label>车牌：</label><input type="text" name="plate">
+      <label>项目：</label><input type="text" name="project" required>
+      <label>价格：</label><input type="number" name="price" step="0.01">
+      <label>联系方式：</label><input type="text" name="contact">
+      <label>备注：</label><textarea name="note"></textarea>
+      <div class="form-buttons">
+        <button type="button" class="save-btn" onclick="saveTask()">保存</button>
+        <button type="button" class="cancel-btn" onclick="closeModal()">取消</button>
+      </div>
+    </form>
   </div>
+</div>
 
-  <div class="schedule"></div>
+<div id="detailModal" class="modal">
+  <div class="modal-content" id="detailContent"></div>
+</div>
 
-  <footer>Designed by Shawn</footer>
+<script>
+const supabaseUrl='https://mgrorhbschtyrdrekfhb.supabase.co';
+const supabaseKey='sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc';
+const supabaseClient=supabase.createClient(supabaseUrl,supabaseKey);
 
-  <button class="add-btn" onclick="openModal()">+</button>
+const schedule=document.querySelector('.schedule');
+const rows=['本周上午','本周下午','下周上午','下周下午'];
+const cols=['周一','周二','周三','周四','周五','周六'];
 
-  <div id="taskModal" class="modal">
-    <div class="modal-content">
-      <h3>添加任务</h3>
-      <form id="addForm">
-        <label>日期：</label><input type="date" name="date" required>
-        <label>时间：</label><input type="time" name="time" required>
-        <label>车型：</label><input type="text" name="car">
-        <label>里程：</label><input type="text" name="mileage">
-        <label>车牌：</label><input type="text" name="plate">
-        <label>项目：</label><input type="text" name="project" required>
-        <label>价格：</label><input type="number" name="price" step="0.01">
-        <label>联系方式：</label><input type="text" name="contact">
-        <label>备注：</label><textarea name="note"></textarea>
+rows.forEach(r=>{
+  const label=document.createElement('div');
+  label.className='cell time-label';label.textContent=r;
+  schedule.appendChild(label);
+  for(let i=0;i<6;i++){
+    const c=document.createElement('div');
+    c.className='cell';c.dataset.row=r;c.dataset.col=cols[i];
+    schedule.appendChild(c);
+  }
+});
 
-        <div class="form-buttons">
-          <button type="button" class="save-btn" onclick="saveTask()">保存</button>
-          <button type="button" class="cancel-btn" onclick="closeModal()">取消</button>
-        </div>
-      </form>
-    </div>
-  </div>
+function mondayOf(date){
+  const d=new Date(date);
+  const day=d.getDay()||7;
+  d.setDate(d.getDate()-day+1);
+  return new Date(d.getFullYear(),d.getMonth(),d.getDate());
+}
+function fmt(d){return `${d.getMonth()+1}.${d.getDate()}`;}
 
-  <script>
-    const supabaseUrl = 'https://mgrorhbschtyrdrekfhb.supabase.co';
-    const supabaseKey = 'sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc';
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+function updateWeekRange(){
+  let now=new Date();
+  let mon=mondayOf(now);
+  let sat=new Date(mon);sat.setDate(mon.getDate()+5);
+  if(now>sat){mon.setDate(mon.getDate()+7);sat.setDate(sat.getDate()+7);}
+  const nextMon=new Date(mon);nextMon.setDate(mon.getDate()+7);
+  const nextSat=new Date(nextMon);nextSat.setDate(nextMon.getDate()+5);
+  document.getElementById('subtitle').textContent=
+    `本周 ${fmt(mon)}–${fmt(sat)} ｜ 下周 ${fmt(nextMon)}–${fmt(nextSat)}`;
+  return {mon,sat,nextMon,nextSat};
+}
 
-    const schedule = document.querySelector('.schedule');
-    const rows = ['本周上午','本周下午','下周上午','下周下午'];
-    const cols = ['周一','周二','周三','周四','周五','周六'];
+function getWeekType(date,range){
+  if(date>=range.mon&&date<=range.sat)return'本周';
+  if(date>=range.nextMon&&date<=range.nextSat)return'下周';
+  return null;
+}
 
-    rows.forEach(r=>{
-      const label=document.createElement('div');
-      label.className='cell time-label';
-      label.textContent=r;
-      schedule.appendChild(label);
-      for(let i=0;i<6;i++){
-        const cell=document.createElement('div');
-        cell.className='cell';
-        cell.dataset.row=r;
-        cell.dataset.col=cols[i];
-        schedule.appendChild(cell);
-      }
-    });
+async function loadTasks(){
+  const range=updateWeekRange();
+  const {data:del}=await supabaseClient.from('deleted_tasks').select('id');
+  const deletedIds=del?del.map(x=>x.id):[];
+  const {data:tasks}=await supabaseClient.from('tasks').select('*');
+  document.querySelectorAll('.cell').forEach(c=>{
+    if(!c.classList.contains('time-label'))c.innerHTML='';
+  });
+  (tasks||[]).filter(t=>!deletedIds.includes(t.id)).forEach(task=>{
+    const date=new Date(task.date);
+    const week=getWeekType(date,range);
+    if(!week)return;
+    const row=`${week}${parseInt(task.time)<12?'上午':'下午'}`;
+    const col=cols[(date.getDay()+6)%7];
+    const cell=Array.from(document.querySelectorAll('.cell'))
+      .find(c=>c.dataset.row===row&&c.dataset.col===col);
+    if(!cell)return;
+    const div=document.createElement('div');
+    div.className='task';
+    div.innerHTML=`<span>${task.time.slice(0,5)} ${task.project}</span>
+    <button onclick="deleteTask('${task.id}',this)">×</button>`;
+    div.onclick=e=>{
+      if(e.target.tagName==='BUTTON')return;
+      showDetail(task);
+    };
+    cell.appendChild(div);
+  });
+}
 
-    function getWeekRange() {
-      const now = new Date();
-      const day = now.getDay() || 7;
-      const mon = new Date(now);
-      mon.setDate(now.getDate() - day + 1);
-      const sat = new Date(mon); sat.setDate(mon.getDate() + 5);
-      const nextMon = new Date(mon); nextMon.setDate(mon.getDate() + 7);
-      const nextSat = new Date(nextMon); nextSat.setDate(nextMon.getDate() + 5);
-      const fmt = d => `${d.getMonth()+1}.${d.getDate()}`;
-      document.getElementById('subtitle').textContent =
-        `本周 ${fmt(mon)}–${fmt(sat)} ｜ 下周 ${fmt(nextMon)}–${fmt(nextSat)}`;
-    }
+async function deleteTask(id,btn){
+  await supabaseClient.from('deleted_tasks').insert([{id}]);
+  btn.parentElement.remove();
+}
 
-    getWeekRange();
+async function saveTask(){
+  const form=document.getElementById('addForm');
+  const data=Object.fromEntries(new FormData(form));
+  await supabaseClient.from('tasks').insert([data]);
+  closeModal();form.reset();loadTasks();
+}
 
-    async function loadTasks() {
-      const { data: deleted } = await supabaseClient.from('deleted_tasks').select('id');
-      const deletedIds = deleted ? deleted.map(d => d.id) : [];
-      const { data: tasks } = await supabaseClient.from('tasks').select('*');
-      document.querySelectorAll('.cell').forEach(c=>{
-        if(!c.classList.contains('time-label')) c.innerHTML='';
-      });
-      (tasks || []).filter(t => !deletedIds.includes(t.id)).forEach(placeTask);
-    }
+function openModal(){document.getElementById('taskModal').style.display='flex';}
+function closeModal(){document.getElementById('taskModal').style.display='none';}
 
-    function placeTask(task) {
-      const date = new Date(task.date);
-      const weekday = date.getDay();
-      if (weekday === 0 || weekday > 6) return;
-      const isNextWeek = (date - new Date()) / (1000*60*60*24) >= 7;
-      const row = `${isNextWeek ? '下周' : '本周'}${parseInt(task.time)<12?'上午':'下午'}`;
-      const col = cols[weekday-1];
-      const cell = Array.from(document.querySelectorAll('.cell'))
-        .find(c => c.dataset.row===row && c.dataset.col===col);
-      if(!cell) return;
-      const div=document.createElement('div');
-      div.className='task';
-      div.innerHTML=`<span>${task.time.slice(0,5)} ${task.project}</span><button onclick="deleteTask('${task.id}', this)">×</button>`;
-      cell.appendChild(div);
-    }
+function showDetail(task){
+  const modal=document.getElementById('detailModal');
+  const box=document.getElementById('detailContent');
+  box.innerHTML=`
+    <h3>${task.project||''}</h3>
+    <p><b>日期：</b>${task.date||''}</p>
+    <p><b>时间：</b>${task.time||''}</p>
+    <p><b>车型：</b>${task.car||''}</p>
+    <p><b>里程：</b>${task.mileage||''}</p>
+    <p><b>车牌：</b>${task.plate||''}</p>
+    <p><b>价格：</b>${task.price??''}</p>
+    <p><b>联系人：</b>${task.contact||''}</p>
+    <p><b>备注：</b>${task.note||''}</p>
+    <button class="cancel-btn" onclick="closeDetail()">关闭</button>`;
+  modal.style.display='flex';
+}
+function closeDetail(){document.getElementById('detailModal').style.display='none';}
 
-    async function deleteTask(id, btn){
-      await supabaseClient.from('deleted_tasks').insert([{ id }]);
-      btn.parentElement.remove();
-    }
-
-    async function saveTask(){
-      const form=document.getElementById('addForm');
-      const task=Object.fromEntries(new FormData(form));
-      await supabaseClient.from('tasks').insert([task]);
-      closeModal();
-      form.reset();
-      loadTasks();
-    }
-
-    function openModal(){document.getElementById('taskModal').style.display='flex';}
-    function closeModal(){document.getElementById('taskModal').style.display='none';}
-
-    loadTasks();
-  </script>
+loadTasks();
+</script>
 </body>
 </html>
