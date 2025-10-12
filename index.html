@@ -4,325 +4,238 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TD Schedule</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       background: #111;
-      color: #fff;
-      font-family: system-ui, -apple-system, sans-serif;
+      color: white;
+      font-family: system-ui, sans-serif;
       margin: 0;
       padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    header { text-align: center; margin: 20px 0; }
-    h1 { font-size: 28px; margin-bottom: 8px; }
-    #subtitle { font-size: 16px; color: #aaa; }
-
-    .schedule {
-      display: grid;
-      grid-template-columns: 100px repeat(6, 1fr);
-      grid-template-rows: repeat(4, 120px);
-      gap: 2px;
-      width: 95%;
-      max-width: 1100px;
-      border: 3px solid #444;
-      border-radius: 6px;
-      overflow: hidden;
-      background: #1a1a1a;
-    }
-
-    .cell {
-      border: 2px solid #333;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
-      padding: 8px;
-      text-align: left;
-      font-size: 15px;
-      background: #1a1a1a;
-      position: relative;
-    }
-
-    .header-row {
-      display: grid;
-      grid-template-columns: 100px repeat(6, 1fr);
-      width: 95%;
-      max-width: 1100px;
-      margin-top: 8px;
-      gap: 2px;
-    }
-    .header-cell {
-      border: 2px solid #333;
-      background: #222;
-      font-weight: bold;
       text-align: center;
-      padding: 10px 0;
     }
-    .header-cell:first-child { background: transparent; border: none; }
-
-    .time-label {
-      font-weight: bold;
-      background: #222;
-      align-items: center;
-      justify-content: center;
+    h1 { margin-top: 20px; font-size: 24px; }
+    h2 { font-weight: 400; color: #aaa; margin-top: 5px; margin-bottom: 25px; }
+    table {
+      width: 90%;
+      margin: 0 auto;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    td, th {
+      border: 2px solid #333;
+      padding: 20px;
       text-align: center;
-      display: flex;
+      vertical-align: top;
+      width: 14%;
     }
-
+    .left-label {
+      width: 8%;
+      background: #1c1c1c;
+      font-weight: bold;
+    }
     .task {
-      cursor: pointer;
-      background: #007aff33;
-      padding: 4px 6px;
-      border-radius: 4px;
-      font-size: 14px;
-      margin: 2px 0;
-      width: 100%;
+      background: #004aad;
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-
-    .add-btn {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      width: 60px;
-      height: 60px;
-      background: #007aff;
-      border-radius: 50%;
-      color: white;
-      font-size: 40px;
+    .task span { flex: 1; }
+    .task button {
+      background: transparent;
+      color: #fff;
       border: none;
+      font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
-
-    footer { margin: 20px; color: #666; font-size: 14px; }
-
-    .modal {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: none; justify-content: center; align-items: center;
+    .fab {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 30px;
+      cursor: pointer;
+    }
+    #taskModal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
     }
     .modal-content {
-      background: #222; padding: 20px; border-radius: 8px;
-      width: 90%; max-width: 420px; line-height: 1.6;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      text-align: left;
     }
-    .delete-btn, .close-btn {
-      border: none; color: #fff; padding: 8px 14px;
-      border-radius: 4px; cursor: pointer; margin: 5px 4px;
+    .modal-content input, .modal-content textarea {
+      width: 100%;
+      margin: 5px 0 10px;
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
     }
-    .delete-btn { background: #d33; }
-    .close-btn { background: #007aff; }
-
-    #addModal .modal-content form {
-      display: flex; flex-direction: column; gap: 8px;
+    .modal-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
     }
-    input, textarea {
-      width: 100%; background: #333; color: #fff;
-      border: none; border-radius: 4px; padding: 8px;
+    .modal-buttons button {
+      flex: 1;
+      margin: 0 5px;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
     }
-    .form-buttons {
-      margin-top: 12px;
-      display: flex; justify-content: space-between;
-    }
+    .save-btn { background: #28a745; color: white; }
+    .cancel-btn { background: #dc3545; color: white; }
+    footer { margin-top: 30px; color: #666; font-size: 14px; }
   </style>
+</head>
+<body>
+  <h1>TD Schedule</h1>
+  <h2 id="week-range"></h2>
 
-  <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-    const supabaseUrl = "https://mgrorhbschtyrdrekfhb.supabase.co";
-    const supabaseKey = "sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  <table id="schedule">
+    <tr>
+      <th></th>
+      <th>周一</th><th>周二</th><th>周三</th><th>周四</th><th>周五</th><th>周六</th>
+    </tr>
+    <tr>
+      <td class="left-label">本周上午</td>
+      <td colspan="6" id="week1-am"></td>
+    </tr>
+    <tr>
+      <td class="left-label">本周下午</td>
+      <td colspan="6" id="week1-pm"></td>
+    </tr>
+    <tr>
+      <td class="left-label">下周上午</td>
+      <td colspan="6" id="week2-am"></td>
+    </tr>
+    <tr>
+      <td class="left-label">下周下午</td>
+      <td colspan="6" id="week2-pm"></td>
+    </tr>
+  </table>
 
-    // 获取悉尼本地日期（YYYY-MM-DD）
-    function todaySydneyISO() {
-      const fmt = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Australia/Sydney', year:'numeric', month:'2-digit', day:'2-digit'
-      });
-      const parts = fmt.formatToParts(new Date());
-      const y = parts.find(p=>p.type==='year').value;
-      const m = parts.find(p=>p.type==='month').value;
-      const d = parts.find(p=>p.type==='day').value;
-      return `${y}-${m}-${d}`;
-    }
-    function weekdayFromISO(iso) {
-      const d = new Date(iso + 'T00:00:00Z');
-      const dow = d.getUTCDay();
-      return (dow + 6) % 7;
-    }
-    function addDaysISO(iso, delta) {
-      const t = new Date(iso + 'T00:00:00Z').getTime();
-      const d2 = new Date(t + delta * 86400000);
-      const y = d2.getUTCFullYear();
-      const m = String(d2.getUTCMonth()+1).padStart(2,'0');
-      const d = String(d2.getUTCDate()).padStart(2,'0');
-      return `${y}-${m}-${d}`;
-    }
-    function mondayOfWeekISO(iso) {
-      const w = weekdayFromISO(iso);
-      return addDaysISO(iso, -w);
-    }
+  <button class="fab" onclick="openModal()">+</button>
 
-    // 显示周范围
-    const subtitle = document.getElementById("subtitle");
-    (function setSubtitle() {
-      const todayISO = todaySydneyISO();
-      const thisMon = mondayOfWeekISO(todayISO);
-      const thisSat = addDaysISO(thisMon, 5);
-      const nextMon = addDaysISO(thisMon, 7);
-      const nextSat = addDaysISO(nextMon, 5);
-      const fmt = iso => {
-        const d = new Date(iso + 'T00:00:00Z');
-        return `${d.getUTCMonth()+1}.${d.getUTCDate()}`;
-      };
-      subtitle.textContent = `本周 ${fmt(thisMon)}–${fmt(thisSat)} ｜ 下周 ${fmt(nextMon)}–${fmt(nextSat)}`;
-    })();
+  <div id="taskModal">
+    <div class="modal-content">
+      <h3>添加任务</h3>
+      <input id="date" type="date" />
+      <input id="time" type="time" />
+      <input id="car" type="text" placeholder="车辆" />
+      <input id="mileage" type="text" placeholder="里程" />
+      <input id="plate" type="text" placeholder="车牌号" />
+      <input id="project" type="text" placeholder="项目" />
+      <input id="price" type="number" placeholder="价格" />
+      <input id="contact" type="text" placeholder="联系人" />
+      <textarea id="note" placeholder="备注"></textarea>
+      <div class="modal-buttons">
+        <button class="save-btn" onclick="saveTask()">保存</button>
+        <button class="cancel-btn" onclick="closeModal()">取消</button>
+      </div>
+    </div>
+  </div>
 
-    // 生成表头与格子
-    const days = ["周一","周二","周三","周四","周五","周六"];
-    const rows = ["本周上午","本周下午","下周上午","下周下午"];
-    const headerRow = document.createElement('div');
-    headerRow.className = 'header-row';
-    const blank = document.createElement('div'); headerRow.appendChild(blank);
-    days.forEach(d=>{
-      const hc=document.createElement('div');
-      hc.className='header-cell'; hc.textContent=d;
-      headerRow.appendChild(hc);
-    });
-    document.addEventListener('DOMContentLoaded',()=>{
-      document.body.insertBefore(headerRow, document.querySelector('.schedule'));
-    });
+  <footer>Designed by Shawn</footer>
 
-    const schedule = document.querySelector('.schedule');
-    schedule.innerHTML = '';
-    rows.forEach(rowLabel=>{
-      const label=document.createElement('div');
-      label.className='cell time-label';
-      label.textContent=rowLabel;
-      schedule.appendChild(label);
-      for(let i=0;i<6;i++){
-        const cell=document.createElement('div');
-        cell.className='cell';
-        cell.dataset.row=rowLabel;
-        cell.dataset.col=days[i];
-        schedule.appendChild(cell);
-      }
-    });
+  <script>
+    const supabaseUrl = 'https://mgrorhbschtyrdrekfhb.supabase.co';
+    const supabaseKey = 'sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc';
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 放置任务
-    function placeTaskDom(task) {
-      if (!task.date || !task.time) return;
-      const todayISO=todaySydneyISO();
-      const thisMon=mondayOfWeekISO(todayISO);
-      const nextMon=addDaysISO(thisMon,7);
-      const nextNextMon=addDaysISO(thisMon,14);
-      let whichWeek=null;
-      if (task.date>=thisMon && task.date<nextMon) whichWeek='本周';
-      else if (task.date>=nextMon && task.date<nextNextMon) whichWeek='下周';
-      else return;
-      const hour=parseInt(String(task.time).split(':')[0]||'0',10);
-      const whichHalf=hour<12?'上午':'下午';
-      const w=weekdayFromISO(task.date);
-      if (w<0||w>5) return;
-      const rowLabel=`${whichWeek}${whichHalf}`;
-      const colLabel=days[w];
-      const cell=Array.from(document.querySelectorAll('.cell'))
-        .find(c=>c.dataset&&c.dataset.row===rowLabel&&c.dataset.col===colLabel);
-      if(!cell)return;
-      const div=document.createElement('div');
-      div.className='task';
-      const hhmm=task.time.length>=5?task.time.slice(0,5):task.time;
-      div.textContent=`${hhmm} ${task.project||''}`;
-      div.onclick=()=>showTaskDetail(task,div);
-      cell.appendChild(div);
+    const modal = document.getElementById('taskModal');
+
+    function openModal() { modal.style.display = 'flex'; }
+    function closeModal() { modal.style.display = 'none'; }
+
+    function getWeekRange(date = new Date()) {
+      const start = new Date(date);
+      start.setDate(date.getDate() - date.getDay() + 1);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 5);
+      const nextStart = new Date(start);
+      nextStart.setDate(start.getDate() + 7);
+      const nextEnd = new Date(nextStart);
+      nextEnd.setDate(nextStart.getDate() + 5);
+
+      const fmt = d => `${d.getMonth() + 1}.${d.getDate()}`;
+      document.getElementById('week-range').innerText =
+        `本周 ${fmt(start)} - ${fmt(end)}　|　下周 ${fmt(nextStart)} - ${fmt(nextEnd)}`;
     }
 
     async function loadTasks() {
-      const {data,error}=await supabase.from('tasks').select('*').order('date',{ascending:true}).order('time',{ascending:true});
-      if(error){console.error(error);return;}
-      Array.from(document.querySelectorAll('.cell')).forEach(c=>{
-        if(!c.classList.contains('time-label'))c.innerHTML='';
+      const { data: deleted } = await supabaseClient.from('deleted_tasks').select('id');
+      const deletedIds = deleted ? deleted.map(d => d.id) : [];
+
+      const { data: tasks } = await supabaseClient.from('tasks').select('*');
+      const activeTasks = tasks.filter(t => !deletedIds.includes(t.id));
+      renderTasks(activeTasks);
+    }
+
+    function renderTasks(tasks) {
+      document.querySelectorAll('#schedule td[colspan="6"]').forEach(td => td.innerHTML = '');
+      tasks.forEach(task => {
+        const d = new Date(task.date);
+        const weekday = d.getDay();
+        const weekType = isNextWeek(d) ? 'week2' : 'week1';
+        const half = task.time < '12:00' ? 'am' : 'pm';
+        const cell = document.getElementById(`${weekType}-${half}`);
+        if (!cell) return;
+        const div = document.createElement('div');
+        div.className = 'task';
+        div.innerHTML = `<span>${task.time} - ${task.project}</span><button onclick="deleteTask('${task.id}', this)">×</button>`;
+        cell.appendChild(div);
       });
-      (data||[]).forEach(placeTaskDom);
     }
 
-    function showTaskDetail(task,domRef){
-      const modal=document.getElementById('modal');
-      modal.style.display='flex';
-      modal.querySelector('.modal-content').innerHTML=`
-        <h3>${task.project||''}</h3>
-        <p><b>日期：</b>${task.date||''}</p>
-        <p><b>时间：</b>${(task.time||'').toString().slice(0,5)}</p>
-        <p><b>车名：</b>${task.car||''}</p>
-        <p><b>里程：</b>${task.mileage||''}</p>
-        <p><b>车牌：</b>${task.plate||''}</p>
-        <p><b>价格：</b>${task.price??''}</p>
-        <p><b>联系人：</b>${task.contact||''}</p>
-        <p><b>备注：</b>${task.note||''}</p>
-        <button class="delete-btn" id="deleteTemp">删除</button>
-        <button class="close-btn" onclick="closeModal()">关闭</button>
-      `;
-      document.getElementById('deleteTemp').onclick=async()=>{
-        if(!task.id){alert("无法删除：没有ID");return;}
-        const {error}=await supabase.from('tasks').delete().eq('id',task.id);
-        if(error){alert("删除失败："+error.message);return;}
-        if(domRef&&domRef.remove)domRef.remove();
-        closeModal();
+    async function deleteTask(id, btn) {
+      await supabaseClient.from('deleted_tasks').insert([{ id }]);
+      btn.parentElement.remove();
+    }
+
+    function isNextWeek(date) {
+      const now = new Date();
+      const diff = (date - now) / (1000 * 60 * 60 * 24);
+      return diff >= 7 && diff < 14;
+    }
+
+    async function saveTask() {
+      const task = {
+        date: document.getElementById('date').value,
+        time: document.getElementById('time').value,
+        car: document.getElementById('car').value,
+        mileage: document.getElementById('mileage').value,
+        plate: document.getElementById('plate').value,
+        project: document.getElementById('project').value,
+        price: Number(document.getElementById('price').value),
+        contact: document.getElementById('contact').value,
+        note: document.getElementById('note').value,
       };
+      await supabaseClient.from('tasks').insert([task]);
+      closeModal();
+      loadTasks();
     }
 
-    window.closeModal=()=>document.getElementById('modal').style.display='none';
-    window.addTask=()=>document.getElementById('addModal').style.display='flex';
-
-    window.saveTask=async()=>{
-      const form=document.getElementById('addForm');
-      const task=Object.fromEntries(new FormData(form));
-      if(task.price)task.price=Number(task.price);
-      const {error}=await supabase.from('tasks').insert([task]);
-      if(error){alert("保存失败："+error.message);return;}
-      document.getElementById('addModal').style.display='none';
-      form.reset();
-      loadTasks();
-    };
-    window.cancelAdd=()=>document.getElementById('addModal').style.display='none';
+    getWeekRange();
     loadTasks();
   </script>
-</head>
-<body>
-  <header>
-    <h1>TD Schedule</h1>
-    <div id="subtitle"></div>
-  </header>
-
-  <div class="schedule"></div>
-
-  <footer>Designed by Shawn</footer>
-  <button class="add-btn" onclick="addTask()">+</button>
-
-  <div id="modal" class="modal">
-    <div class="modal-content"></div>
-  </div>
-
-  <div id="addModal" class="modal">
-    <div class="modal-content">
-      <h3>添加任务</h3>
-      <form id="addForm">
-        <label>日期：</label><input type="date" name="date" required>
-        <label>时间：</label><input type="time" name="time" required>
-        <label>车型：</label><input type="text" name="car">
-        <label>里程：</label><input type="text" name="mileage">
-        <label>车牌：</label><input type="text" name="plate">
-        <label>项目：</label><input type="text" name="project" required>
-        <label>报价：</label><input type="number" name="price" step="0.01">
-        <label>联系方式：</label><input type="text" name="contact">
-        <label>备注：</label><textarea name="note"></textarea>
-
-        <div class="form-buttons">
-          <button type="button" class="close-btn" onclick="saveTask()">保存</button>
-          <button type="button" class="delete-btn" onclick="cancelAdd()">取消</button>
-        </div>
-      </form>
-    </div>
-  </div>
 </body>
 </html>
