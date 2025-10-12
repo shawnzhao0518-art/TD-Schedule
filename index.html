@@ -20,7 +20,6 @@
     h1 { font-size: 28px; margin-bottom: 8px; }
     #subtitle { font-size: 16px; color: #aaa; }
 
-    /* 4×6 网格（左侧标签列 + 6天，4行：本周上/下午、下周上/下午） */
     .schedule {
       display: grid;
       grid-template-columns: 100px repeat(6, 1fr);
@@ -37,6 +36,7 @@
     .cell {
       border: 2px solid #333;
       display: flex;
+      flex-direction: column;
       align-items: flex-start;
       justify-content: flex-start;
       padding: 8px;
@@ -108,58 +108,62 @@
       background: #222; padding: 20px; border-radius: 8px;
       width: 90%; max-width: 420px; line-height: 1.6;
     }
-    .delete-btn { background: #d33; border: none; color: #fff; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 8px; }
-    .close-btn { background: #007aff; border: none; color: #fff; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
-
-    /* 添加弹窗表单 */
-    #addModal .modal-content form { display: flex; flex-direction: column; gap: 8px; }
-    input, textarea {
-      width: 100%; background: #333; color: #fff; border: none; border-radius: 4px; padding: 8px;
+    .delete-btn, .close-btn {
+      border: none; color: #fff; padding: 8px 14px;
+      border-radius: 4px; cursor: pointer; margin: 5px 4px;
     }
-    #addModal button { margin-top: 10px; }
+    .delete-btn { background: #d33; }
+    .close-btn { background: #007aff; }
+
+    #addModal .modal-content form {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    input, textarea {
+      width: 100%; background: #333; color: #fff;
+      border: none; border-radius: 4px; padding: 8px;
+    }
+    .form-buttons {
+      margin-top: 12px;
+      display: flex; justify-content: space-between;
+    }
   </style>
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-    // 配置你的 Supabase
     const supabaseUrl = "https://mgrorhbschtyrdrekfhb.supabase.co";
     const supabaseKey = "sb_publishable_bbYg4Bl2F5uHC_3XqdH2RA_NOnp3wfc";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // ===== 日期/周工具：全部用“日历日期”算法，避免时区造成的星期几错误 =====
-    // 把 JS Date → “澳洲悉尼的本地日期字符串” (YYYY-MM-DD)
+    // 获取悉尼本地日期（YYYY-MM-DD）
     function todaySydneyISO() {
-      const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year:'numeric', month:'2-digit', day:'2-digit' });
+      const fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Australia/Sydney', year:'numeric', month:'2-digit', day:'2-digit'
+      });
       const parts = fmt.formatToParts(new Date());
       const y = parts.find(p=>p.type==='year').value;
       const m = parts.find(p=>p.type==='month').value;
       const d = parts.find(p=>p.type==='day').value;
-      return `${y}-${m}-${d}`; // YYYY-MM-DD
+      return `${y}-${m}-${d}`;
     }
-    // 以 ISO（YYYY-MM-DD）为纯日历日期，计算星期几（周一=0..周日=6）
     function weekdayFromISO(iso) {
-      const d = new Date(iso + 'T00:00:00Z'); // 以纯日期计算，使用 getUTCDay 保持一致
-      const dow = d.getUTCDay(); // 周日=0..周六=6
-      return (dow + 6) % 7;      // 转换为 周一=0..周日=6
+      const d = new Date(iso + 'T00:00:00Z');
+      const dow = d.getUTCDay();
+      return (dow + 6) % 7;
     }
-    // ISO 日期加减天数（返回新的 ISO）
     function addDaysISO(iso, delta) {
       const t = new Date(iso + 'T00:00:00Z').getTime();
-      const t2 = t + delta * 86400000;
-      const d2 = new Date(t2);
+      const d2 = new Date(t + delta * 86400000);
       const y = d2.getUTCFullYear();
       const m = String(d2.getUTCMonth()+1).padStart(2,'0');
       const d = String(d2.getUTCDate()).padStart(2,'0');
       return `${y}-${m}-${d}`;
     }
-    // 求某个 ISO 日期所在周（周一起） 的周一 ISO
     function mondayOfWeekISO(iso) {
-      const w = weekdayFromISO(iso); // 周一=0
+      const w = weekdayFromISO(iso);
       return addDaysISO(iso, -w);
     }
 
-    // 顶部副标题：本周 & 下周范围（周一-周六）
+    // 显示周范围
     const subtitle = document.getElementById("subtitle");
     (function setSubtitle() {
       const todayISO = todaySydneyISO();
@@ -167,149 +171,120 @@
       const thisSat = addDaysISO(thisMon, 5);
       const nextMon = addDaysISO(thisMon, 7);
       const nextSat = addDaysISO(nextMon, 5);
-      const fmt = (iso) => {
+      const fmt = iso => {
         const d = new Date(iso + 'T00:00:00Z');
         return `${d.getUTCMonth()+1}.${d.getUTCDate()}`;
       };
       subtitle.textContent = `本周 ${fmt(thisMon)}–${fmt(thisSat)} ｜ 下周 ${fmt(nextMon)}–${fmt(nextSat)}`;
     })();
 
-    // ====== 生成表头（周一～周六）与 4×6 网格 ======
+    // 生成表头与格子
     const days = ["周一","周二","周三","周四","周五","周六"];
     const rows = ["本周上午","本周下午","下周上午","下周下午"];
-
     const headerRow = document.createElement('div');
     headerRow.className = 'header-row';
-    // 左上角空白
     const blank = document.createElement('div'); headerRow.appendChild(blank);
-    // 六天标题
-    days.forEach(d => {
-      const hc = document.createElement('div');
-      hc.className = 'header-cell';
-      hc.textContent = d;
+    days.forEach(d=>{
+      const hc=document.createElement('div');
+      hc.className='header-cell'; hc.textContent=d;
       headerRow.appendChild(hc);
     });
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded',()=>{
       document.body.insertBefore(headerRow, document.querySelector('.schedule'));
     });
 
     const schedule = document.querySelector('.schedule');
     schedule.innerHTML = '';
     rows.forEach(rowLabel=>{
-      const label = document.createElement('div');
-      label.className = 'cell time-label';
-      label.textContent = rowLabel;
+      const label=document.createElement('div');
+      label.className='cell time-label';
+      label.textContent=rowLabel;
       schedule.appendChild(label);
-      for (let i=0;i<6;i++){
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.dataset.row = rowLabel;    // 本周上午/下午/下周上午/下午
-        cell.dataset.col = days[i];     // 周一..周六
+      for(let i=0;i<6;i++){
+        const cell=document.createElement('div');
+        cell.className='cell';
+        cell.dataset.row=rowLabel;
+        cell.dataset.col=days[i];
         schedule.appendChild(cell);
       }
     });
 
-    // ====== 根据任务的“日期 + 时间”放入正确格子 ======
+    // 放置任务
     function placeTaskDom(task) {
-      // 任务必须有 date / time
       if (!task.date || !task.time) return;
-
-      // 当前周的周一 ISO
-      const todayISO = todaySydneyISO();
-      const thisMon = mondayOfWeekISO(todayISO);
-      const nextMon = addDaysISO(thisMon, 7);
-      const nextNextMon = addDaysISO(thisMon, 14);
-
-      // 任务所属周：本周 or 下周，否则跳过不显示
-      let whichWeek = null;
-      // 属于本周： [thisMon, nextMon)
-      if (task.date >= thisMon && task.date < nextMon) whichWeek = '本周';
-      // 属于下周： [nextMon, nextNextMon)
-      else if (task.date >= nextMon && task.date < nextNextMon) whichWeek = '下周';
-      else return; // 其他周不显示
-
-      // 上午/下午
-      const hour = parseInt(String(task.time).split(':')[0] || '0', 10);
-      const whichHalf = hour < 12 ? '上午' : '下午';
-
-      // 星期几列（周一=0..周六=5）
-      const w = weekdayFromISO(task.date);
-      if (w < 0 || w > 5) return; // 周日不显示
-
-      // 行标签
-      const rowLabel = `${whichWeek}${whichHalf}`;
-      const colLabel = days[w];
-
-      // 找到对应格子
-      const cell = Array.from(document.querySelectorAll('.cell'))
-        .find(c => c.dataset && c.dataset.row === rowLabel && c.dataset.col === colLabel);
-      if (!cell) return;
-
-      // 任务 DOM（收起只显示“时间 + 项目”）
-      const div = document.createElement('div');
-      div.className = 'task';
-      const hhmm = task.time.length >= 5 ? task.time.slice(0,5) : task.time;
-      div.textContent = `${hhmm} ${task.project || ''}`;
-      div.onclick = () => showTaskDetail(task, div);
+      const todayISO=todaySydneyISO();
+      const thisMon=mondayOfWeekISO(todayISO);
+      const nextMon=addDaysISO(thisMon,7);
+      const nextNextMon=addDaysISO(thisMon,14);
+      let whichWeek=null;
+      if (task.date>=thisMon && task.date<nextMon) whichWeek='本周';
+      else if (task.date>=nextMon && task.date<nextNextMon) whichWeek='下周';
+      else return;
+      const hour=parseInt(String(task.time).split(':')[0]||'0',10);
+      const whichHalf=hour<12?'上午':'下午';
+      const w=weekdayFromISO(task.date);
+      if (w<0||w>5) return;
+      const rowLabel=`${whichWeek}${whichHalf}`;
+      const colLabel=days[w];
+      const cell=Array.from(document.querySelectorAll('.cell'))
+        .find(c=>c.dataset&&c.dataset.row===rowLabel&&c.dataset.col===colLabel);
+      if(!cell)return;
+      const div=document.createElement('div');
+      div.className='task';
+      const hhmm=task.time.length>=5?task.time.slice(0,5):task.time;
+      div.textContent=`${hhmm} ${task.project||''}`;
+      div.onclick=()=>showTaskDetail(task,div);
       cell.appendChild(div);
     }
 
-    // ====== 加载数据库任务并渲染 ======
     async function loadTasks() {
-      const { data, error } = await supabase.from('tasks').select('*').order('date', {ascending:true}).order('time',{ascending:true});
-      if (error) { console.error(error); return; }
-      // 清空所有非标签格
-      Array.from(document.querySelectorAll('.cell')).forEach(c => {
-        if (!c.classList.contains('time-label')) c.innerHTML = '';
+      const {data,error}=await supabase.from('tasks').select('*').order('date',{ascending:true}).order('time',{ascending:true});
+      if(error){console.error(error);return;}
+      Array.from(document.querySelectorAll('.cell')).forEach(c=>{
+        if(!c.classList.contains('time-label'))c.innerHTML='';
       });
-      (data || []).forEach(placeTaskDom);
+      (data||[]).forEach(placeTaskDom);
     }
 
-    // ====== 任务详情（仅查看 + 页面内删除，不修改数据库） ======
-    function showTaskDetail(task, domRef) {
-      const modal = document.getElementById('modal');
-      modal.style.display = 'flex';
-      modal.querySelector('.modal-content').innerHTML = `
-        <h3>${task.project || ''}</h3>
-        <p><b>日期：</b>${task.date || ''}</p>
-        <p><b>时间：</b>${(task.time || '').toString().slice(0,5)}</p>
-        <p><b>车名：</b>${task.car || ''}</p>
-        <p><b>里程：</b>${task.mileage || ''}</p>
-        <p><b>车牌：</b>${task.plate || ''}</p>
-        <p><b>价格：</b>${task.price ?? ''}</p>
-        <p><b>联系人：</b>${task.contact || ''}</p>
-        <p><b>备注：</b>${task.note || ''}</p>
-        <button class="delete-btn" id="deleteTemp">删除（仅页面）</button>
+    function showTaskDetail(task,domRef){
+      const modal=document.getElementById('modal');
+      modal.style.display='flex';
+      modal.querySelector('.modal-content').innerHTML=`
+        <h3>${task.project||''}</h3>
+        <p><b>日期：</b>${task.date||''}</p>
+        <p><b>时间：</b>${(task.time||'').toString().slice(0,5)}</p>
+        <p><b>车名：</b>${task.car||''}</p>
+        <p><b>里程：</b>${task.mileage||''}</p>
+        <p><b>车牌：</b>${task.plate||''}</p>
+        <p><b>价格：</b>${task.price??''}</p>
+        <p><b>联系人：</b>${task.contact||''}</p>
+        <p><b>备注：</b>${task.note||''}</p>
+        <button class="delete-btn" id="deleteTemp">删除</button>
         <button class="close-btn" onclick="closeModal()">关闭</button>
       `;
-      // 仅移除页面上的这条（不触库）
-      document.getElementById('deleteTemp').onclick = () => {
-        if (domRef && domRef.remove) domRef.remove();
+      document.getElementById('deleteTemp').onclick=async()=>{
+        if(!task.id){alert("无法删除：没有ID");return;}
+        const {error}=await supabase.from('tasks').delete().eq('id',task.id);
+        if(error){alert("删除失败："+error.message);return;}
+        if(domRef&&domRef.remove)domRef.remove();
         closeModal();
       };
     }
 
-    window.closeModal = () => (document.getElementById('modal').style.display = 'none');
+    window.closeModal=()=>document.getElementById('modal').style.display='none';
+    window.addTask=()=>document.getElementById('addModal').style.display='flex';
 
-    // ====== 添加任务（写入数据库），刷新渲染 ======
-    window.addTask = () => (document.getElementById('addModal').style.display = 'flex');
-    window.saveTask = async () => {
-      const form = document.getElementById('addForm');
-      const task = Object.fromEntries(new FormData(form));
-      // price numeric 转数字
-      if (task.price !== undefined && task.price !== null && task.price !== '') {
-        task.price = Number(task.price);
-      } else {
-        delete task.price;
-      }
-      const { error } = await supabase.from('tasks').insert([task]);
-      if (error) { alert('保存失败：' + error.message); return; }
-      document.getElementById('addModal').style.display = 'none';
+    window.saveTask=async()=>{
+      const form=document.getElementById('addForm');
+      const task=Object.fromEntries(new FormData(form));
+      if(task.price)task.price=Number(task.price);
+      const {error}=await supabase.from('tasks').insert([task]);
+      if(error){alert("保存失败："+error.message);return;}
+      document.getElementById('addModal').style.display='none';
       form.reset();
       loadTasks();
     };
-
-    // 初始加载
+    window.cancelAdd=()=>document.getElementById('addModal').style.display='none';
     loadTasks();
   </script>
 </head>
@@ -319,19 +294,15 @@
     <div id="subtitle"></div>
   </header>
 
-  <!-- 顶部“周一~周六”标题行由脚本插入 -->
   <div class="schedule"></div>
 
   <footer>Designed by Shawn</footer>
-
   <button class="add-btn" onclick="addTask()">+</button>
 
-  <!-- 详情弹窗 -->
   <div id="modal" class="modal">
     <div class="modal-content"></div>
   </div>
 
-  <!-- 添加任务弹窗 -->
   <div id="addModal" class="modal">
     <div class="modal-content">
       <h3>添加任务</h3>
@@ -345,9 +316,12 @@
         <label>报价：</label><input type="number" name="price" step="0.01">
         <label>联系方式：</label><input type="text" name="contact">
         <label>备注：</label><textarea name="note"></textarea>
+
+        <div class="form-buttons">
+          <button type="button" class="close-btn" onclick="saveTask()">保存</button>
+          <button type="button" class="delete-btn" onclick="cancelAdd()">取消</button>
+        </div>
       </form>
-      <button onclick="saveTask()">保存</button>
-      <button onclick="document.getElementById('addModal').style.display='none'">取消</button>
     </div>
   </div>
 </body>
