@@ -129,46 +129,34 @@ function mondayOf(date){
 function fmt(d){return `${d.getMonth()+1}.${d.getDate()}`;}
 
 function updateWeekRange(){
-  let now=new Date();
-  let mon=mondayOf(now);
-  let sat=new Date(mon);sat.setDate(mon.getDate()+6); // ✅ 修正 +6
-  if(now>sat){mon.setDate(mon.getDate()+7);sat.setDate(sat.getDate()+7);}
-  const nextMon=new Date(mon);nextMon.setDate(mon.getDate()+7);
-  const nextSat=new Date(nextMon);nextSat.setDate(nextMon.getDate()+6); // ✅ 修正 +6
-  document.getElementById('subtitle').textContent=
+  let now = new Date();
+  let mon = mondayOf(now);
+  let sat = new Date(mon);
+  sat.setDate(mon.getDate() + 5); // ✅ 改回只显示到周六（周一+5天）
+
+  // 判断是否跨周
+  if (now > sat) {
+    mon.setDate(mon.getDate() + 7);
+    sat.setDate(mon.getDate() + 5);
+  }
+
+  const nextMon = new Date(mon);
+  nextMon.setDate(mon.getDate() + 7);
+  const nextSat = new Date(nextMon);
+  nextSat.setDate(nextMon.getDate() + 5);
+
+  // ✅ 日期显示只用于标题，不影响渲染逻辑
+  document.getElementById('subtitle').textContent =
     `本周 ${fmt(mon)}–${fmt(sat)} ｜ 下周 ${fmt(nextMon)}–${fmt(nextSat)}`;
-  return {mon,sat,nextMon,nextSat};
-}
+  
+  // ✅ 但返回的范围仍然使用 +6，以确保周六任务显示
+  const renderSat = new Date(mon);
+  renderSat.setDate(mon.getDate() + 6);
+  const renderNextSat = new Date(nextMon);
+  renderNextSat.setDate(nextMon.getDate() + 6);
 
-async function loadTasks(){
-  const range=updateWeekRange();
-  const {data:del}=await supabaseClient.from('deleted_tasks').select('id');
-  const deletedIds=del?del.map(x=>x.id):[];
-  const {data:tasks}=await supabaseClient.from('tasks').select('*');
-  document.querySelectorAll('.cell').forEach(c=>{
-    if(!c.classList.contains('time-label'))c.innerHTML='';
-  });
-  (tasks||[]).filter(t=>!deletedIds.includes(t.id)).forEach(task=>{
-    const date=new Date(task.date + 'T00:00:00Z'); // ✅ 修正时区
-    const week=getWeekType(date,range);
-    if(!week)return;
-    const row=`${week}${parseInt(task.time)<12?'上午':'下午'}`;
-    const col=cols[(date.getDay()+6)%7];
-    const cell=Array.from(document.querySelectorAll('.cell'))
-      .find(c=>c.dataset.row===row&&c.dataset.col===col);
-    if(!cell)return;
-    const div=document.createElement('div');
-    div.className='task';
-    div.innerHTML=`<span>${task.time.slice(0,5)} ${task.project}</span>
-    <button onclick="deleteTask('${task.id}',this)">×</button>`;
-    div.onclick=e=>{
-      if(e.target.tagName==='BUTTON')return;
-      showDetail(task);
-    };
-    cell.appendChild(div);
-  });
+  return { mon, sat: renderSat, nextMon, nextSat: renderNextSat };
 }
-
 function getWeekType(date,range){
   if(date>=range.mon&&date<=range.sat)return'本周';
   if(date>=range.nextMon&&date<=range.nextSat)return'下周';
