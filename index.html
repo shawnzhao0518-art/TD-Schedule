@@ -131,13 +131,42 @@ function fmt(d){return `${d.getMonth()+1}.${d.getDate()}`;}
 function updateWeekRange(){
   let now=new Date();
   let mon=mondayOf(now);
-  let sat=new Date(mon);sat.setDate(mon.getDate()+5);
+  let sat=new Date(mon);sat.setDate(mon.getDate()+6); // ✅ 修正 +6
   if(now>sat){mon.setDate(mon.getDate()+7);sat.setDate(sat.getDate()+7);}
   const nextMon=new Date(mon);nextMon.setDate(mon.getDate()+7);
-  const nextSat=new Date(nextMon);nextSat.setDate(nextMon.getDate()+5);
+  const nextSat=new Date(nextMon);nextSat.setDate(nextMon.getDate()+6); // ✅ 修正 +6
   document.getElementById('subtitle').textContent=
     `本周 ${fmt(mon)}–${fmt(sat)} ｜ 下周 ${fmt(nextMon)}–${fmt(nextSat)}`;
   return {mon,sat,nextMon,nextSat};
+}
+
+async function loadTasks(){
+  const range=updateWeekRange();
+  const {data:del}=await supabaseClient.from('deleted_tasks').select('id');
+  const deletedIds=del?del.map(x=>x.id):[];
+  const {data:tasks}=await supabaseClient.from('tasks').select('*');
+  document.querySelectorAll('.cell').forEach(c=>{
+    if(!c.classList.contains('time-label'))c.innerHTML='';
+  });
+  (tasks||[]).filter(t=>!deletedIds.includes(t.id)).forEach(task=>{
+    const date=new Date(task.date + 'T00:00:00Z'); // ✅ 修正时区
+    const week=getWeekType(date,range);
+    if(!week)return;
+    const row=`${week}${parseInt(task.time)<12?'上午':'下午'}`;
+    const col=cols[(date.getDay()+6)%7];
+    const cell=Array.from(document.querySelectorAll('.cell'))
+      .find(c=>c.dataset.row===row&&c.dataset.col===col);
+    if(!cell)return;
+    const div=document.createElement('div');
+    div.className='task';
+    div.innerHTML=`<span>${task.time.slice(0,5)} ${task.project}</span>
+    <button onclick="deleteTask('${task.id}',this)">×</button>`;
+    div.onclick=e=>{
+      if(e.target.tagName==='BUTTON')return;
+      showDetail(task);
+    };
+    cell.appendChild(div);
+  });
 }
 
 function getWeekType(date,range){
