@@ -207,7 +207,7 @@ async function saveTask(){
 function openModal(){document.getElementById('taskModal').style.display='flex';}
 function closeModal(){document.getElementById('taskModal').style.display='none';}
 
-function showDetail(task){
+ffunction showDetail(task){
   const modal=document.getElementById('detailModal');
   const box=document.getElementById('detailContent');
   box.innerHTML=`
@@ -220,6 +220,7 @@ function showDetail(task){
     <p><b>价格：</b>${task.price??''}</p>
     <p><b>联系人：</b>${task.contact||''}</p>
     <p><b>备注：</b>${task.note||''}</p>
+    ${task.source === 'customer' ? '<div style="margin-top:10px;padding:8px;border-top:1px solid #444;color:#0f0;">💬 来源：客户在线预约</div>' : ''}
     <button class="cancel-btn" onclick="closeDetail()">关闭</button>`;
   modal.style.display='flex';
 }
